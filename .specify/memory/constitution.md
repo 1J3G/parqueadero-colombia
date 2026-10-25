@@ -1,18 +1,10 @@
 <!--
 Sync Impact Report
-- Version change: 1.2.0 → 2.0.0
-- Modified principles: I (Modular Architecture by Business Domain) → I (Reglas de
-  dominio como fuente de verdad); VII (Simplicity, Flat Structure & Functional
-  Style) → II (Simplicidad y estilo); AI Agent Behavior → IV (Desarrollo guiado
-  por la especificación).
-- Added sections: Stack tecnológico; manejo de errores y validaciones; autenticación.
-- Removed sections: Mandatos adicionales de TDD, API-first, observabilidad,
-  seguridad/cumplimiento no indicados, y complejidad/concurrencia no especificadas.
-- Templates: ✅ `.specify/templates/plan-template.md` updated;
-  ✅ `.specify/templates/spec-template.md` updated;
-  ✅ `.specify/templates/tasks-template.md` reviewed (no change required; tests
-  remain optional).
-- Runtime guidance: ⚠ no README.md or runtime guidance files were found for review.
+- Version change: 2.2.0 → 2.3.0
+- Modified rules: RN-02 now treats Cancelado as terminal for renewal (a new
+  contract is required); RN-12 excludes canceled contracts from payment-based
+  reactivation.
+- Templates: No changes required.
 - Follow-up TODOs: Ninguno.
 -->
 # Parqueadero Autos Colombia Constitution
@@ -95,7 +87,8 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 - **RN-02 (Ciclo de vida del contrato)**: Un contrato de mensualidad solo puede
   tener uno de estos cuatro estados mutuamente excluyentes: Pendiente de Pago,
   Activo, Vencido o Cancelado. Si se crea sin pago asentado, su estado inicial
-  es Pendiente de Pago.
+  es Pendiente de Pago. Un contrato Cancelado no se reactiva; para contratar de
+  nuevo se requiere crear otro contrato.
 - **RN-03 (Vigencia contractual)**: El ingreso automatizado solo se permite si
   el contrato asociado está Activo y la fecha actual es menor o igual a su
   fecha de finalización.
@@ -109,10 +102,10 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 - **RN-05 (Anti-passback)**: Un vehículo cuyo estado sea Dentro del Parqueadero
   no puede registrar otra entrada. Un vehículo cuyo estado sea Fuera del
   Parqueadero no puede registrar una salida.
-- **RN-06 (Bloqueo por vencimiento)**: Si al momento del ingreso el contrato
-  está Vencido o Pendiente de Pago, se bloquea la apertura de talanquera o el
-  registro. El acceso excepcional requiere autorización explícita de un rol
-  Administrativo y la creación obligatoria de una novedad.
+- **RN-06 (Bloqueo contractual)**: Si al momento del ingreso el contrato está
+  Vencido, Pendiente de Pago o Cancelado, se bloquea la apertura de talanquera
+  o el registro. El acceso excepcional requiere autorización explícita de un
+  rol Administrativo y la creación obligatoria de una novedad.
 - **RN-07 (Inmutabilidad y auditoría de tránsitos)**: Cada entrada y salida se
   persiste de forma inmutable con timestamp del servidor, ID del operario en
   turno e ID de la celda asignada. Estos datos no pueden modificarse ni
@@ -125,8 +118,9 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 ### Módulo 3: Gestión de Celdas y Capacidad
 
 - **RN-09 (Tipo y compatibilidad de celda)**: Cada celda tiene una categoría
-  fija: Carro, Moto, Camioneta o Discapacitado. Solo se asignará un vehículo si
-  su tipo coincide con la tipificación o jerarquía compatible de la celda.
+  fija: Carro, Moto, Camioneta o Discapacitado. La asignación exige
+  compatibilidad estricta: Carro con Carro, Moto con Moto, Camioneta con
+  Camioneta y únicamente vehículos Carro con celdas Discapacitado.
 - **RN-10 (Ocupación exclusiva)**: Una celda Ocupada no puede asignarse a otro
   vehículo. Al confirmar una entrada, el estado de la celda asignada cambia
   atómicamente de Disponible a Ocupada.
@@ -137,13 +131,14 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 ### Módulo 4: Gestión de Pagos
 
 - **RN-12 (Activación por pago)**: El registro exitoso del pago de una
-  mensualidad, nueva o renovación, cambia inmediatamente el contrato a Activo
-  y extiende la fecha de vencimiento según los meses pagados, desbloqueando el
-  acceso del vehículo.
-- **RN-13 (Integridad de recaudo y apertura de caja)**: Todo pago recibido se
-  asocia al ID del operario que abrió el turno de caja vigente. No se registran
-  pagos hasta que el operario realice explícitamente la Apertura de Caja con su
-  base de efectivo.
+  mensualidad nueva o renovación, siempre que el contrato no esté Cancelado,
+  cambia inmediatamente el contrato a Activo y extiende la fecha de
+  vencimiento según los meses pagados, desbloqueando el acceso del vehículo.
+- **RN-13 (Integridad de recaudo y apertura de caja)**: Un operario solo puede
+  procesar transacciones si tiene una caja abierta a su nombre. Todo pago
+  recibido se asocia al ID del operario que abrió el turno de caja vigente. No
+  se registran pagos hasta que el operario realice explícitamente la Apertura
+  de Caja con su base de efectivo.
 - **RN-14 (Comprobante tributario)**: Cada pago de mensualidad procesado emite
   obligatoriamente un comprobante fiscal o documento equivalente con
   numeración consecutiva, valor neto, IVA vigente (19%) y datos de
@@ -155,6 +150,16 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
   ni anular pagos registrados. Una corrección por error humano requiere la
   contraseña de un perfil Administrador y genera un registro histórico de
   auditoría con la justificación del reajuste.
+
+### Módulo 5: Autenticación y Autorización
+
+- **RN-17 (Autenticación y sesión activa)**: Operarios y administradores se
+  autentican con su documento de identidad y contraseña. Solo usuarios con
+  sesión activa pueden consultar disponibilidad de celdas, registrar entradas
+  o salidas y procesar pagos.
+- **RN-18 (Cambio de vehículo contractual)**: Solo un usuario con rol
+  Administrador puede autorizar la modificación de la placa asociada a un
+  contrato existente.
 
 ## Manejo de Errores y Validaciones
 
@@ -180,7 +185,7 @@ La versión sigue semver:
 - **PATCH**: aclaraciones y correcciones que no cambian el significado.
 
 Cada revisión de especificación, plan o implementación debe comprobar su
-conformidad con las reglas RN-01 a RN-16, el stack, las restricciones de
+conformidad con las reglas RN-01 a RN-18, el stack, las restricciones de
 estructura y el proceso de desarrollo guiado por especificación.
 
-**Versión**: 2.0.0 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-24
+**Versión**: 2.3.0 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-24
