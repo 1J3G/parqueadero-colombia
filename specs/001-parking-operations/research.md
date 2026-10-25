@@ -1,6 +1,6 @@
 # Research: Gestión de operaciones del parqueadero
 
-**Fecha**: 2026-10-24  
+**Fecha**: 2026-10-24
 **Especificación**: [spec.md](./spec.md)
 
 ## Decisiones
