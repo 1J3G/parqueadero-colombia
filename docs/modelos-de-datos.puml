@@ -1,0 +1,357 @@
+@startuml MER conceptual
+title Autos Colombia - Modelo entidad-relacion conceptual
+hide methods
+skinparam classAttributeIconSize 0
+
+entity "Usuario" as Usuario
+entity "Sesion" as Sesion
+entity "Cliente" as Cliente
+entity "Vehiculo" as Vehiculo
+entity "Contrato" as Contrato
+entity "Celda" as Celda
+entity "Caja" as Caja
+entity "Transito" as Transito
+entity "Novedad" as Novedad
+entity "Pago" as Pago
+entity "Comprobante" as Comprobante
+entity "Auditoria de pago" as Auditoria
+
+Usuario "1" -- "0..*" Sesion : inicia
+Cliente "1" -- "0..*" Contrato : suscribe
+Vehiculo "1" -- "0..1" Contrato : se asocia
+Usuario "0..1" -- "0..*" Contrato : cancela
+Usuario "1" -- "0..*" Caja : abre
+Vehiculo "1" -- "0..*" Transito : registra
+Contrato "1" -- "0..*" Transito : habilita
+Celda "1" -- "0..*" Transito : asignada en
+Usuario "1" -- "0..*" Transito : opera
+Transito "1" -- "0..*" Novedad : documenta
+Usuario "1" -- "0..*" Novedad : registra
+Contrato "1" -- "0..*" Pago : recibe
+Caja "1" -- "0..*" Pago : agrupa
+Usuario "1" -- "0..*" Pago : procesa
+Pago "1" -- "0..1" Comprobante : genera
+Pago "1" -- "0..*" Auditoria : registra anulacion
+Usuario "1" -- "0..*" Auditoria : autoriza
+
+note right of Vehiculo
+  Este MER refleja la especificacion:
+  cada vehiculo se asocia como maximo
+  a un contrato.
+end note
+@enduml
+
+@startuml MR relacional
+title Autos Colombia - Modelo relacional
+hide methods
+skinparam classAttributeIconSize 0
+
+class "users" as users {
+  +id : PK
+  document : UK
+  password_hash
+  role
+  created_at
+}
+
+class "user_sessions" as user_sessions {
+  +id : PK
+  user_id : FK
+  token_hash : UK
+  created_at
+  revoked_at
+}
+
+class "customers" as customers {
+  +id : PK
+  document_type
+  document : UK
+  full_name
+  created_at
+}
+
+class "vehicles" as vehicles {
+  +id : PK
+  plate : UK
+  vehicle_type
+  created_at
+}
+
+class "contracts" as contracts {
+  +id : PK
+  customer_id : FK
+  vehicle_id : FK
+  status
+  expires_on
+  cancelled_by : FK
+  cancellation_justification
+  cancelled_at
+  created_at
+}
+
+class "cells" as cells {
+  +id : PK
+  label : UK
+  category
+  status
+}
+
+class "cash_openings" as cash_openings {
+  +id : PK
+  user_id : FK
+  base_amount
+  opened_at
+  closed_at
+}
+
+class "transits" as transits {
+  +id : PK
+  vehicle_id : FK
+  contract_id : FK
+  cell_id : FK
+  operator_id : FK
+  direction
+  occurred_at
+}
+
+class "novelties" as novelties {
+  +id : PK
+  transit_id : FK
+  novelty_type
+  damage_type
+  description
+  severity
+  recorded_by : FK
+  created_at
+}
+
+class "payments" as payments {
+  +id : PK
+  contract_id : FK
+  cash_opening_id : FK
+  operator_id : FK
+  net_amount
+  tax_amount
+  total_amount
+  paid_months
+  payment_method
+  reference_code
+  status
+  created_at
+}
+
+class "receipt_counters" as receipt_counters {
+  +id : PK
+  last_number
+}
+
+class "receipts" as receipts {
+  +id : PK
+  payment_id : FK, UK
+  consecutive_number : UK
+  customer_document_type
+  customer_document
+  customer_full_name
+  net_amount
+  tax_amount
+  total_amount
+  issued_at
+}
+
+class "payment_audit" as payment_audit {
+  +id : PK
+  payment_id : FK
+  administrator_id : FK
+  justification
+  created_at
+}
+
+users "1" -- "0..*" user_sessions : user_id
+customers "1" -- "0..*" contracts : customer_id
+vehicles "1" -- "0..*" contracts : vehicle_id
+users "0..1" -- "0..*" contracts : cancelled_by
+users "1" -- "0..*" cash_openings : user_id
+vehicles "1" -- "0..*" transits : vehicle_id
+contracts "1" -- "0..*" transits : contract_id
+cells "1" -- "0..*" transits : cell_id
+users "1" -- "0..*" transits : operator_id
+transits "1" -- "0..*" novelties : transit_id
+users "1" -- "0..*" novelties : recorded_by
+contracts "1" -- "0..*" payments : contract_id
+cash_openings "1" -- "0..*" payments : cash_opening_id
+users "1" -- "0..*" payments : operator_id
+payments "1" -- "0..1" receipts : payment_id
+payments "1" -- "0..*" payment_audit : payment_id
+users "1" -- "0..*" payment_audit : administrator_id
+
+note right of contracts
+  vehicle_id no es unico en el DDL.
+  El esquema permite varios contratos
+  para un mismo vehiculo.
+end note
+
+note right of receipt_counters
+  Tabla tecnica sin clave foranea
+  declarada hacia receipts.
+end note
+@enduml
+
+@startuml Modelo fisico MySQL
+title Autos Colombia - Modelo fisico MySQL
+hide methods
+skinparam classAttributeIconSize 0
+
+class "users" as db_users {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  document : VARCHAR(30) <<UNIQUE, NOT NULL>>
+  password_hash : VARCHAR(255) <<NOT NULL>>
+  role : ENUM('Operario','Administrador') <<NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "user_sessions" as db_sessions {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  user_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  token_hash : CHAR(64) <<UNIQUE, NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+  revoked_at : DATETIME(6) <<NULL>>
+}
+
+class "customers" as db_customers {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  document_type : ENUM('CC','CE','NIT') <<NOT NULL>>
+  document : VARCHAR(30) <<UNIQUE, NOT NULL>>
+  full_name : VARCHAR(160) <<NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "vehicles" as db_vehicles {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  plate : VARCHAR(6) <<UNIQUE, NOT NULL>>
+  vehicle_type : ENUM('Carro','Moto','Camioneta') <<NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "contracts" as db_contracts {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  customer_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  vehicle_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  status : ENUM('Pendiente de Pago','Activo','Vencido','Cancelado') <<NOT NULL>>
+  expires_on : DATE <<NULL>>
+  cancelled_by : BIGINT UNSIGNED <<FK, NULL>>
+  cancellation_justification : VARCHAR(1000) <<NULL>>
+  cancelled_at : DATETIME(6) <<NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "cells" as db_cells {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  label : VARCHAR(30) <<UNIQUE, NOT NULL>>
+  category : ENUM('Carro','Moto','Camioneta','Discapacitado') <<NOT NULL>>
+  status : ENUM('Disponible','Ocupada') <<NOT NULL>>
+}
+
+class "cash_openings" as db_cash {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  user_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  base_amount : DECIMAL(12,2) <<NOT NULL>>
+  opened_at : DATETIME(6) <<NOT NULL>>
+  closed_at : DATETIME(6) <<NULL>>
+}
+
+class "transits" as db_transits {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  vehicle_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  contract_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  cell_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  operator_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  direction : ENUM('Entrada','Salida') <<NOT NULL>>
+  occurred_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "novelties" as db_novelties {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  transit_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  novelty_type : ENUM('Daño físico','Acceso excepcional') <<NOT NULL>>
+  damage_type : ENUM('Golpe','Rayón','Falla') <<NULL>>
+  description : VARCHAR(1000) <<NOT NULL>>
+  severity : ENUM('Leve','Moderada','Grave') <<NULL>>
+  recorded_by : BIGINT UNSIGNED <<FK, NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "payments" as db_payments {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  contract_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  cash_opening_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  operator_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  net_amount : DECIMAL(12,2) <<NOT NULL>>
+  tax_amount : DECIMAL(12,2) <<NOT NULL>>
+  total_amount : DECIMAL(12,2) <<NOT NULL>>
+  paid_months : INT UNSIGNED <<NOT NULL>>
+  payment_method : ENUM('Efectivo','Transferencia Bancaria','Tarjeta Crédito/Débito') <<NOT NULL>>
+  reference_code : VARCHAR(120) <<NULL>>
+  status : ENUM('Registrado','Anulado') <<NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "receipt_counters" as db_counters {
+  +id : TINYINT UNSIGNED <<PK>>
+  last_number : BIGINT UNSIGNED <<NOT NULL>>
+}
+
+class "receipts" as db_receipts {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  payment_id : BIGINT UNSIGNED <<FK, UNIQUE, NOT NULL>>
+  consecutive_number : BIGINT UNSIGNED <<UNIQUE, NOT NULL>>
+  customer_document_type : ENUM('CC','CE','NIT') <<NOT NULL>>
+  customer_document : VARCHAR(30) <<NOT NULL>>
+  customer_full_name : VARCHAR(160) <<NOT NULL>>
+  net_amount : DECIMAL(12,2) <<NOT NULL>>
+  tax_amount : DECIMAL(12,2) <<NOT NULL>>
+  total_amount : DECIMAL(12,2) <<NOT NULL>>
+  issued_at : DATETIME(6) <<NOT NULL>>
+}
+
+class "payment_audit" as db_audit {
+  +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  payment_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  administrator_id : BIGINT UNSIGNED <<FK, NOT NULL>>
+  justification : VARCHAR(1000) <<NOT NULL>>
+  created_at : DATETIME(6) <<NOT NULL>>
+}
+
+db_users "1" -- "0..*" db_sessions : user_id
+db_customers "1" -- "0..*" db_contracts : customer_id
+db_vehicles "1" -- "0..*" db_contracts : vehicle_id
+db_users "0..1" -- "0..*" db_contracts : cancelled_by
+db_users "1" -- "0..*" db_cash : user_id
+db_vehicles "1" -- "0..*" db_transits : vehicle_id
+db_contracts "1" -- "0..*" db_transits : contract_id
+db_cells "1" -- "0..*" db_transits : cell_id
+db_users "1" -- "0..*" db_transits : operator_id
+db_transits "1" -- "0..*" db_novelties : transit_id
+db_users "1" -- "0..*" db_novelties : recorded_by
+db_contracts "1" -- "0..*" db_payments : contract_id
+db_cash "1" -- "0..*" db_payments : cash_opening_id
+db_users "1" -- "0..*" db_payments : operator_id
+db_payments "1" -- "0..1" db_receipts : payment_id
+db_payments "1" -- "0..*" db_audit : payment_id
+db_users "1" -- "0..*" db_audit : administrator_id
+
+note right of db_contracts
+  FK vehicle_id no es UNIQUE.
+  Un vehiculo puede aparecer en varios
+  contratos en la base actual.
+end note
+
+note right of db_receipts
+  Los datos del cliente son una instantanea.
+  No existe FK a customers.
+end note
+
+note right of db_counters
+  El esquema no declara una FK
+  hacia receipts.
+end note
+@enduml

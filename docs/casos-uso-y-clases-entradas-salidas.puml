@@ -1,0 +1,224 @@
+@startuml Casos de uso - Entradas y salidas
+title Gestion de entrada y salida de vehiculos - Casos de uso
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuario autenticado" as Usuario
+actor "Operario" as Operario
+actor "Administrador" as Administrador
+Usuario <|-- Operario
+Usuario <|-- Administrador
+
+rectangle "Modulo de gestion de entradas y salidas" {
+  usecase "Consultar contratos\ny estado del vehiculo" as UCContratos
+  usecase "Consultar celdas\ndisponibles y compatibles" as UCCeldas
+  usecase "Registrar entrada" as UCEntrada
+  usecase "Validar contrato y vigencia" as UCContrato
+  usecase "Verificar estado dentro/fuera\n(Anti-Passback)" as UCAntiPassback
+  usecase "Validar disponibilidad y\ncompatibilidad de celda" as UCCeldaValida
+  usecase "Registrar daños\npreexistentes" as UCDanos
+  usecase "Autorizar acceso excepcional" as UCExcepcional
+  usecase "Registrar novedad de\nacceso excepcional" as UCNovedadEx
+  usecase "Registrar salida" as UCSalida
+  usecase "Liberar celda asociada" as UCLiberar
+  usecase "Guardar transito inmutable" as UCTransito
+  usecase "Rechazar operacion y\nmantener datos sin cambios" as UCRechazo
+}
+
+Usuario --> UCContratos
+Usuario --> UCCeldas
+Usuario --> UCEntrada
+Usuario --> UCSalida
+Usuario --> UCDanos
+Administrador --> UCExcepcional
+
+UCEntrada ..> UCContrato : <<include>>
+UCEntrada ..> UCAntiPassback : <<include>>
+UCEntrada ..> UCCeldaValida : <<include>>
+UCEntrada ..> UCTransito : <<include>>
+UCDanos ..> UCEntrada : <<extend>>
+UCExcepcional ..> UCEntrada : <<extend>>
+UCExcepcional ..> UCNovedadEx : <<include>>
+UCSalida ..> UCAntiPassback : <<include>>
+UCSalida ..> UCLiberar : <<include>>
+UCSalida ..> UCTransito : <<include>>
+UCRechazo ..> UCEntrada : <<extend>>
+UCRechazo ..> UCSalida : <<extend>>
+
+note bottom of UCEntrada
+  Requiere sesion activa.
+  Para Operario, requiere caja abierta a su nombre.
+  Administrador puede ejecutar el transito sin caja.
+  La celda y el transito se actualizan en una transaccion.
+end note
+
+note right of UCExcepcional
+  Se valida documento, rol Administrador
+  y contraseña de confirmacion.
+  La novedad excepcional es obligatoria.
+  La autorizacion forma parte de la solicitud;
+  no se guarda como una entidad de autorizacion.
+end note
+
+note right of UCTransito
+  Los registros de transito no se pueden
+  actualizar ni eliminar.
+end note
+@enduml
+
+@startuml Clases - Entradas y salidas
+title Gestion de entrada y salida de vehiculos - Diagrama de clases
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+package "API y logica de aplicacion" {
+  class "transits.py" as TransitModule <<module>> {
+    {static} register_entry(payload, operator)
+    {static} register_exit(payload, operator)
+    {static} verify_exceptional_administrator(cursor, authorization)
+  }
+
+  class "EntryRequest" as EntryRequest <<request DTO>> {
+    +contract_id: int
+    +cell_id: int
+    +exceptional_authorization: ExceptionalAuthorization?
+    +physical_novelties: PhysicalNovelty[]
+  }
+
+  class "ExitRequest" as ExitRequest <<request DTO>> {
+    +contract_id: int
+  }
+
+  class "ExceptionalAuthorization" as ExceptionalAuthorization <<request DTO>> {
+    +administrator_document: str
+    +administrator_password: str
+    +novelty: str
+  }
+
+  class "PhysicalNovelty" as PhysicalNovelty <<request DTO>> {
+    +damage_type: str
+    +description: str
+    +severity: str
+  }
+
+  class "domain.py" as DomainModule <<module>> {
+    {static} compatible_cell(vehicle_type, category): bool
+    {static} require_entry_permission(status, expires_on, today, exceptional)
+  }
+
+  class "cash.py" as CashModule <<module>> {
+    {static} require_open_cash(cursor, user_id): CashOpening
+  }
+
+  class "database.py" as DatabaseModule <<module>> {
+    {static} transaction(): cursor
+  }
+
+  class "cells.py" as CellsModule <<module>> {
+    {static} list_cells(vehicle_type?): Cell[]
+  }
+
+  class "novelties.py" as NoveltiesModule <<module>> {
+    {static} record_novelty(cursor, transit_id, type, description, severity, recorded_by)
+  }
+}
+
+package "Registros persistidos en MySQL" {
+  class "User" as User <<table users>> {
+    +id: BIGINT
+    document: VARCHAR(30)
+    role: ENUM
+  }
+
+  class "Contract" as Contract <<table contracts>> {
+    +id: BIGINT
+    customer_id: BIGINT
+    vehicle_id: BIGINT
+    status: ENUM
+    expires_on: DATE?
+  }
+
+  class "Vehicle" as Vehicle <<table vehicles>> {
+    +id: BIGINT
+    plate: VARCHAR(6)
+    vehicle_type: ENUM
+  }
+
+  class "Cell" as Cell <<table cells>> {
+    +id: BIGINT
+    label: VARCHAR(30)
+    category: ENUM
+    status: ENUM
+  }
+
+  class "Transit" as Transit <<table transits>> {
+    +id: BIGINT
+    vehicle_id: BIGINT
+    contract_id: BIGINT
+    cell_id: BIGINT
+    operator_id: BIGINT
+    direction: ENUM
+    occurred_at: DATETIME(6)
+  }
+
+  class "Novelty" as Novelty <<table novelties>> {
+    +id: BIGINT
+    transit_id: BIGINT
+    novelty_type: ENUM
+    damage_type: ENUM?
+    description: VARCHAR(1000)
+    severity: ENUM?
+    recorded_by: BIGINT
+  }
+
+  class "CashOpening" as CashOpening <<table cash_openings>> {
+    +id: BIGINT
+    user_id: BIGINT
+    opened_at: DATETIME(6)
+    closed_at: DATETIME(6)?
+  }
+}
+
+TransitModule ..> EntryRequest : recibe
+TransitModule ..> ExitRequest : recibe
+EntryRequest *-- "0..1" ExceptionalAuthorization : autorizacion opcional
+EntryRequest *-- "0..*" PhysicalNovelty : daños opcionales
+TransitModule ..> DomainModule : valida reglas
+TransitModule ..> CashModule : exige caja al Operario
+TransitModule ..> DatabaseModule : abre transaccion
+CellsModule ..> DomainModule : filtra compatibilidad
+TransitModule ..> NoveltiesModule : persiste novedades
+TransitModule ..> User : autentica operador y administrador
+TransitModule ..> Contract : consulta contrato y estado
+TransitModule ..> Vehicle : obtiene vehiculo del contrato
+TransitModule ..> Cell : valida y actualiza ocupacion
+TransitModule ..> Transit : inserta entrada o salida
+NoveltiesModule ..> Novelty : inserta novedad
+CashModule ..> CashOpening : verifica apertura activa
+
+Contract "0..*" --> "1" Vehicle : vehicle_id
+Transit "0..*" --> "1" Vehicle : vehicle_id
+Transit "0..*" --> "1" Contract : contract_id
+Transit "0..*" --> "1" Cell : cell_id
+Transit "0..*" --> "1" User : operator_id
+Novelty "0..*" --> "1" Transit : transit_id
+Novelty "0..*" --> "1" User : recorded_by
+CashOpening "0..*" --> "1" User : user_id
+
+note bottom of TransitModule
+  El backend implementa endpoints y logica en modulos
+  y funciones, no en clases de servicio ni entidades ORM.
+  Los elementos <<module>> representan esos modulos;
+  las entidades representan filas de las tablas MySQL.
+end note
+
+note right of Transit
+  Solo se insertan registros.
+  Triggers MySQL impiden UPDATE y DELETE.
+end note
+
+note right of Cell
+  La entrada cambia Disponible a Ocupada.
+  La salida libera la celda de la ultima entrada.
+end note
+@enduml

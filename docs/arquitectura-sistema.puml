@@ -1,0 +1,242 @@
+@startuml Sistema - Componentes
+title Parqueadero Colombia - Arquitectura de componentes
+left to right direction
+skinparam componentStyle rectangle
+
+actor "Operario" as Operario
+actor "Administrador" as Administrador
+
+package "Frontend - Angular SPA" {
+  component "Aplicación web\nRutas protegidas" as SPA
+  component "Autenticación\nLogin / sesión" as AuthUI
+  component "Caja" as CashUI
+  component "Contratos y clientes" as ContractsUI
+  component "Operación de parqueo\nEntradas / salidas" as ParkingUI
+  component "Pagos" as PaymentsUI
+
+  SPA -- AuthUI
+  SPA -- CashUI
+  SPA -- ContractsUI
+  SPA -- ParkingUI
+  SPA -- PaymentsUI
+}
+
+package "Backend - API FastAPI" {
+  component "Aplicación FastAPI\nValidación y manejo de errores" as API
+  component "Routers REST\n/auth, /cash, /cells,\n/customers, /contracts,\n/transits, /payments, /receipts" as Routes
+  component "Servicios de dominio\nAutenticación, caja,\ncontratos, vehículos,\ntránsitos, pagos y recibos" as Domain
+  component "Persistencia\nConector MySQL y\ntransacciones" as Persistence
+}
+
+database "MySQL\nautos_colombia" as MySQL
+
+Operario --> SPA : Usa funciones operativas
+Administrador --> SPA : Usa funciones administrativas
+SPA --> API : HTTP/JSON\n/api/*
+API --> Routes : Registra routers
+Routes --> Domain : Ejecuta reglas de negocio
+Routes --> Persistence : Consultas y transacciones
+Domain --> Persistence : Operaciones transaccionales
+Persistence --> MySQL : SQL / MySQL Connector
+
+note bottom of SPA
+  El proxy /api -> localhost:8000 está configurado
+  para el servidor de desarrollo Angular.
+end note
+
+note bottom of MySQL
+  El esquema y sus restricciones están definidos
+  en db/schema.sql.
+end note
+@enduml
+
+@startuml Sistema - Modelo de datos
+title Parqueadero Colombia - Entidades persistidas
+hide methods
+skinparam classAttributeIconSize 0
+
+class "User\nusers" as User {
+  id : BIGINT
+  document : VARCHAR(30) UNIQUE
+  password_hash : VARCHAR(255)
+  role : ENUM(Operario, Administrador)
+  created_at : DATETIME
+}
+
+class "UserSession\nuser_sessions" as UserSession {
+  id : BIGINT
+  user_id : BIGINT FK
+  token_hash : CHAR(64) UNIQUE
+  created_at : DATETIME
+  revoked_at : DATETIME?
+}
+
+class "Customer\ncustomers" as Customer {
+  id : BIGINT
+  document_type : ENUM(CC, CE, NIT)
+  document : VARCHAR(30) UNIQUE
+  full_name : VARCHAR(160)
+  created_at : DATETIME
+}
+
+class "Vehicle\nvehicles" as Vehicle {
+  id : BIGINT
+  plate : VARCHAR(6) UNIQUE
+  vehicle_type : ENUM(Carro, Moto, Camioneta)
+  created_at : DATETIME
+}
+
+class "Contract\ncontracts" as Contract {
+  id : BIGINT
+  customer_id : BIGINT FK
+  vehicle_id : BIGINT FK
+  status : ENUM(Pendiente de Pago, Activo, Vencido, Cancelado)
+  expires_on : DATE?
+  cancelled_by : BIGINT FK?
+  cancellation_justification : VARCHAR(1000)?
+  cancelled_at : DATETIME?
+  created_at : DATETIME
+}
+
+class "Cell\ncells" as Cell {
+  id : BIGINT
+  label : VARCHAR(30) UNIQUE
+  category : ENUM(Carro, Moto, Camioneta, Discapacitado)
+  status : ENUM(Disponible, Ocupada)
+}
+
+class "CashOpening\ncash_openings" as CashOpening {
+  id : BIGINT
+  user_id : BIGINT FK
+  base_amount : DECIMAL(12,2)
+  opened_at : DATETIME
+  closed_at : DATETIME?
+}
+
+class "Transit\ntransits" as Transit {
+  id : BIGINT
+  vehicle_id : BIGINT FK
+  contract_id : BIGINT FK
+  cell_id : BIGINT FK
+  operator_id : BIGINT FK
+  direction : ENUM(Entrada, Salida)
+  occurred_at : DATETIME
+}
+
+class "Novelty\nnovelties" as Novelty {
+  id : BIGINT
+  transit_id : BIGINT FK
+  novelty_type : ENUM(Daño físico, Acceso excepcional)
+  damage_type : ENUM(Golpe, Rayón, Falla)?
+  description : VARCHAR(1000)
+  severity : ENUM(Leve, Moderada, Grave)?
+  recorded_by : BIGINT FK
+  created_at : DATETIME
+}
+
+class "Payment\npayments" as Payment {
+  id : BIGINT
+  contract_id : BIGINT FK
+  cash_opening_id : BIGINT FK
+  operator_id : BIGINT FK
+  net_amount : DECIMAL(12,2)
+  tax_amount : DECIMAL(12,2)
+  total_amount : DECIMAL(12,2)
+  paid_months : INT
+  payment_method : ENUM
+  reference_code : VARCHAR(120)?
+  status : ENUM(Registrado, Anulado)
+  created_at : DATETIME
+}
+
+class "ReceiptCounter\nreceipt_counters" as ReceiptCounter {
+  id : TINYINT
+  last_number : BIGINT
+}
+
+class "Receipt\nreceipts" as Receipt {
+  id : BIGINT
+  payment_id : BIGINT FK UNIQUE
+  consecutive_number : BIGINT UNIQUE
+  customer_document_type : ENUM(CC, CE, NIT)
+  customer_document : VARCHAR(30)
+  customer_full_name : VARCHAR(160)
+  net_amount : DECIMAL(12,2)
+  tax_amount : DECIMAL(12,2)
+  total_amount : DECIMAL(12,2)
+  issued_at : DATETIME
+}
+
+class "PaymentAudit\npayment_audit" as PaymentAudit {
+  id : BIGINT
+  payment_id : BIGINT FK
+  administrator_id : BIGINT FK
+  justification : VARCHAR(1000)
+  created_at : DATETIME
+}
+
+User "1" -- "0..*" UserSession : tiene
+Customer "1" -- "0..*" Contract : titular
+Vehicle "1" -- "0..*" Contract : asociado
+User "0..1" -- "0..*" Contract : cancela
+User "1" -- "0..*" CashOpening : abre
+Vehicle "1" -- "0..*" Transit : registra
+Contract "1" -- "0..*" Transit : habilita
+Cell "1" -- "0..*" Transit : asignada en
+User "1" -- "0..*" Transit : operador
+Transit "1" -- "0..*" Novelty : registra
+User "1" -- "0..*" Novelty : registra
+Contract "1" -- "0..*" Payment : recibe
+CashOpening "1" -- "0..*" Payment : agrupa
+User "1" -- "0..*" Payment : operador
+Payment "1" -- "0..1" Receipt : genera
+Payment "1" -- "0..*" PaymentAudit : audita anulación
+User "1" -- "0..*" PaymentAudit : administrador
+
+note right of Receipt
+  Los datos del cliente se guardan como
+  una instantánea; no hay FK a Customer.
+end note
+
+note right of ReceiptCounter
+  Contador global de consecutivos;
+  no tiene relación FK con Receipt.
+end note
+
+note bottom of Transit
+  La aplicación impide actualizar o eliminar
+  registros de tránsito mediante triggers.
+end note
+@enduml
+
+@startuml Flujo de registro de pago
+title Registro de pago de mensualidad
+autonumber
+
+actor Operario
+participant "Angular SPA" as UI
+participant "FastAPI\npayments router" as API
+participant "Autenticación" as Auth
+participant "Servicio de pagos" as Payments
+participant "Persistencia" as DB
+database "MySQL" as MySQL
+
+Operario -> UI : Registrar pago
+UI -> API : POST /api/payments\n(cookie parking_session)
+API -> Auth : Validar sesión y rol
+Auth -> DB : Buscar sesión activa por token_hash
+DB -> MySQL : SELECT user_sessions + users
+MySQL --> DB : Usuario y rol
+DB --> Auth : Usuario autenticado
+Auth --> API : Operario
+API -> DB : Iniciar transacción
+API -> Payments : Validar caja y registrar pago
+Payments -> DB : Bloquear contrato y caja\nCalcular impuesto y vencimiento
+Payments -> MySQL : INSERT payment\nUPDATE contract
+Payments -> MySQL : Bloquear e incrementar\nreceipt_counters
+Payments -> MySQL : INSERT receipt
+DB -> MySQL : COMMIT
+MySQL --> API : IDs de pago y recibo
+API --> UI : 201 + resumen del pago
+UI --> Operario : Mostrar confirmación
+@enduml

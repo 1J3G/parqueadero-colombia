@@ -1,0 +1,85 @@
+@startuml Paquetes - Gestion de entradas y salidas
+title Gestion de entrada y salida de vehiculos - Diagrama de paquetes
+left to right direction
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+
+package "Frontend Angular" as Frontend {
+  package "app.routes y app.config" as FrontendConfig
+  package "features.parking" as ParkingFeature
+  package "core.auth.guard y auth.service" as AuthCore
+  package "core.api-error.interceptor" as ErrorInterceptor
+}
+
+package "API FastAPI" as Backend {
+  package "app.main" as MainApp
+  package "app.routes.transits" as TransitRoutes
+  package "app.routes.cells" as CellRoutes
+  package "app.routes.contracts" as ContractRoutes
+  package "app.auth" as AuthModule
+  package "app.cash" as CashModule
+  package "app.domain" as DomainModule
+  package "app.contracts" as ContractLogic
+  package "app.novelties" as NoveltyLogic
+  package "app.database" as DatabaseModule
+}
+
+package "Persistencia MySQL" as Storage {
+  package "autos_colombia" as Schema {
+    package "users y user_sessions" as UsersTables
+    package "contracts y vehicles" as ContractTables
+    package "cells" as CellTables
+    package "cash_openings" as CashTables
+    package "transits" as TransitTables
+    package "novelties" as NoveltyTables
+  }
+}
+
+FrontendConfig ..> ParkingFeature : registra ruta protegida
+FrontendConfig ..> AuthCore : configura guard y cliente HTTP
+ParkingFeature ..> AuthCore : requiere sesion activa
+ParkingFeature ..> ErrorInterceptor : HTTP con credenciales y errores
+ParkingFeature ..> ContractRoutes : GET /api/contracts
+ParkingFeature ..> CellRoutes : GET /api/cells
+ParkingFeature ..> TransitRoutes : POST /api/transits/entry y exit
+AuthCore ..> AuthModule : GET /api/auth/me
+
+MainApp ..> TransitRoutes : registra router
+MainApp ..> CellRoutes : registra router
+MainApp ..> ContractRoutes : registra router
+TransitRoutes ..> AuthModule : autentica usuario y administrador
+TransitRoutes ..> CashModule : verifica caja del Operario
+TransitRoutes ..> DomainModule : valida acceso y celda
+TransitRoutes ..> ContractLogic : actualiza contratos vencidos
+TransitRoutes ..> NoveltyLogic : persiste novedades
+TransitRoutes ..> DatabaseModule : transaccion SQL
+CellRoutes ..> AuthModule : autentica usuario
+CellRoutes ..> DomainModule : filtra celdas compatibles
+CellRoutes ..> DatabaseModule : consulta celdas
+ContractRoutes ..> AuthModule : autentica usuario y rol
+ContractRoutes ..> ContractLogic : consulta contratos y vencimientos
+ContractRoutes ..> DatabaseModule : transaccion SQL
+AuthModule ..> DatabaseModule : consulta sesiones y usuarios
+CashModule ..> DatabaseModule : consulta caja abierta
+NoveltyLogic ..> DatabaseModule : inserta novedad
+
+AuthModule ..> UsersTables : lee usuario y sesion
+CashModule ..> CashTables : consulta apertura activa
+TransitRoutes ..> ContractTables : consulta contrato y vehiculo
+TransitRoutes ..> TransitTables : consulta historial e inserta transito
+TransitRoutes ..> CellTables : bloquea y actualiza ocupacion
+CellRoutes ..> CellTables : consulta disponibilidad
+ContractRoutes ..> ContractTables : consulta contratos
+NoveltyLogic ..> NoveltyTables : inserta novedad
+DatabaseModule ..> Schema : MySQL Connector
+
+note bottom of TransitRoutes
+  La entrada y salida se ejecutan en transacciones.
+  El registro de transito es inmutable.
+end note
+
+note bottom of ParkingFeature
+  El diagrama muestra dependencias del codigo actual:
+  el frontend consume contratos, celdas y transitos.
+end note
+@enduml
