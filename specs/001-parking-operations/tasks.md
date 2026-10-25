@@ -4,7 +4,7 @@
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md)
 
-**Tests**: No se agregan tareas de pruebas automatizadas; la especificación no las solicita. Cada historia incluye criterios de prueba independiente para su aceptación.
+**Tests**: No se agregan tareas independientes de pruebas automatizadas porque la especificación no las solicita. Se incluyen pruebas unitarias de reglas de dominio como verificación de implementación; cada historia conserva sus criterios de aceptación independientes.
 
 **Organization**: Tareas agrupadas por las historias de usuario P1 de `spec.md`; cada tarea con referencia `[Plan:X.Y]` traza al plan de implementación.
 
@@ -18,37 +18,37 @@
 
 **Purpose**: Preparar los proyectos Angular Standalone y FastAPI.
 
-- [ ] T001 [P] [Plan:1.1] Crear `backend/requirements.txt` con FastAPI, servidor ASGI y `mysql-connector-python`, sin fijar versiones no especificadas.
-- [ ] T002 [P] [Plan:1.1] Crear el proyecto Angular Standalone en `frontend/package.json`, `frontend/angular.json`, `frontend/src/main.ts` y `frontend/src/app/app.config.ts`.
+- [x] T001 [P] [Plan:1.1] Crear `backend/requirements.txt` con FastAPI, servidor ASGI y `mysql-connector-python`, sin fijar versiones no especificadas.
+- [x] T002 [P] [Plan:1.1] Crear el proyecto Angular Standalone en `frontend/package.json`, `frontend/angular.json`, `frontend/src/main.ts` y `frontend/src/app/app.config.ts`.
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Proveer esquema, conexión de persistencia y manejo común de errores que requieren las historias.
 
-- [ ] T003 [P] [Plan:1.2] Crear `db/schema.sql` con las entidades y restricciones requeridas para usuarios, clientes, vehículos, contratos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y bitácora.
-- [ ] T004 [P] [Plan:1.2] Crear `backend/app/database.py` para conexión MySQL local, configuración por entorno, consultas parametrizadas y transacciones.
-- [ ] T005 [P] [Plan:1.1] Crear `backend/app/main.py` con el montaje de rutas y `backend/app/errors.py` para respuestas semánticas 400, 401, 403 y 409 sin exponer trazas.
-- [ ] T006 [P] [Plan:2.2] Crear `frontend/src/app/core/api-error.interceptor.ts` para presentar mensajes comprensibles ante errores de autenticación, autorización, validación y conflicto del backend.
+- [x] T003 [P] [Plan:1.2] Crear `db/schema.sql` con las entidades y restricciones requeridas para usuarios, clientes, vehículos, contratos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y bitácora.
+- [x] T004 [P] [Plan:1.2] Crear `backend/app/database.py` para conexión MySQL local, configuración por entorno, consultas parametrizadas y transacciones.
+- [x] T005 [P] [Plan:1.1] Crear `backend/app/main.py` con el montaje de rutas y `backend/app/errors.py` para respuestas semánticas 400, 401, 403 y 409 sin exponer trazas.
+- [x] T006 [P] [Plan:2.2] Crear `frontend/src/app/core/api-error.interceptor.ts` para presentar mensajes comprensibles ante errores de autenticación, autorización, validación y conflicto del backend.
 
 **Checkpoint**: Base de datos, conexión, aplicación API y manejo común de errores preparados; ninguna historia debe omitir las restricciones del esquema.
 
 ## Phase 3: User Story 1 — Acceso autenticado, consulta y caja (Priority: P1) 🎯 MVP
 
-**Goal**: Permitir acceso autenticado por documento y contraseña; habilitar operaciones del operario solo después de abrir una caja a su nombre.
+**Goal**: Permitir acceso autenticado por documento y contraseña; habilitar operaciones del operario solo con caja abierta a su nombre y permitir su cierre por el titular o un Administrador.
 
-**Independent Test**: Iniciar sesión con credenciales válidas e inválidas; comprobar sesión requerida para disponibilidad y operaciones protegidas; intentar transacciones sin caja abierta y después de abrirla.
+**Independent Test**: Iniciar sesión con credenciales válidas e inválidas; comprobar sesión requerida para disponibilidad y operaciones protegidas; abrir y cerrar cajas y comprobar que una caja cerrada no habilita transacciones.
 
 ### Implementation
 
-- [ ] T007 [US1] [Plan:2.1] Implementar búsqueda de usuario por documento, verificación de contraseña y determinación de rol en `backend/app/auth.py`.
-- [ ] T008 [US1] [Plan:2.1,2.2] Crear rutas de inicio y cierre de sesión con identidad mínima necesaria en `backend/app/routes/auth.py`.
-- [ ] T009 [US1] [Plan:2.2] Implementar la dependencia de sesión activa y aplicarla a disponibilidad, entradas, salidas y pagos en `backend/app/auth.py` y `backend/app/main.py`.
-- [ ] T010 [US1] [Plan:2.4] Crear el formulario de inicio de sesión y servicio de sesión Angular en `frontend/src/app/features/auth/login.component.ts` y `frontend/src/app/core/auth.service.ts`.
-- [ ] T011 [US1] [Plan:2.4] Proteger rutas de usuario sin sesión y dirigirlas al inicio de sesión en `frontend/src/app/core/auth.guard.ts` y `frontend/src/app/app.routes.ts`.
-- [ ] T012 [US1] [Plan:2.3] Implementar apertura de caja con base de efectivo, operario responsable y comprobación de caja abierta para transacciones en `backend/app/cash.py` y `backend/app/routes/cash.py`.
-- [ ] T013 [US1] [Plan:2.3] Crear la interfaz para abrir caja y registrar su base de efectivo en `frontend/src/app/features/cash/cash-open.component.ts`.
+- [x] T007 [US1] [Plan:2.1] Implementar búsqueda de usuario por documento, verificación de contraseña y determinación de rol en `backend/app/auth.py`.
+- [x] T008 [US1] [Plan:2.1,2.2] Crear rutas de inicio y cierre de sesión con identidad mínima necesaria en `backend/app/routes/auth.py`.
+- [x] T009 [US1] [Plan:2.2] Implementar la dependencia de sesión activa y aplicarla a disponibilidad, entradas, salidas y pagos en `backend/app/auth.py` y `backend/app/main.py`.
+- [x] T010 [US1] [Plan:2.4] Crear el formulario de inicio de sesión y servicio de sesión Angular en `frontend/src/app/features/auth/login.component.ts` y `frontend/src/app/core/auth.service.ts`.
+- [x] T011 [US1] [Plan:2.4] Proteger rutas de usuario sin sesión y dirigirlas al inicio de sesión en `frontend/src/app/core/auth.guard.ts` y `frontend/src/app/app.routes.ts`.
+- [x] T012 [US1] [Plan:2.3,5.1] Implementar apertura y cierre de caja, titular/Administrador autorizado, hora de cierre del servidor y comprobación de caja abierta para transacciones en `backend/app/cash.py` y `backend/app/routes/cash.py`.
+- [x] T013 [US1] [Plan:2.3] Crear la interfaz para abrir caja con base de efectivo y cerrar cajas abiertas propias o, para Administradores, de cualquier titular en `frontend/src/app/features/cash/cash-open.component.ts`.
 
-**Checkpoint**: El usuario puede iniciar sesión; las operaciones protegidas requieren una sesión activa, y el operario debe abrir caja a su nombre para procesar transacciones.
+**Checkpoint**: El usuario puede iniciar sesión; las operaciones protegidas requieren una sesión activa; el operario solo transacciona con caja abierta y, tras cerrarla, puede iniciar una nueva apertura.
 
 ## Phase 4: User Story 2 — Clientes, vehículos y contratos (Priority: P1)
 
@@ -58,11 +58,11 @@
 
 ### Implementation
 
-- [ ] T014 [P] [US2] [Plan:3.1] Implementar alta y consulta de clientes con documento CC, CE o NIT único en `backend/app/routes/customers.py`.
-- [ ] T015 [P] [US2] [Plan:3.1] Implementar asociación vehículo-contrato y validación de placas ABC123 para carros y ABC12D para motos en `backend/app/vehicles.py` y `backend/app/routes/vehicles.py`.
-- [ ] T016 [US2] [Plan:3.2] Implementar creación de contratos con estado inicial Pendiente de Pago y estados permitidos, manteniendo Cancelado como no reactivable, en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
-- [ ] T017 [US2] [Plan:3.3] Restringir la autorización de cambio de placa al rol Administrador en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
-- [ ] T018 [US2] [Plan:3.1,3.2,3.3] Crear las pantallas Angular de clientes, vehículos y contratos con validaciones de documento, placa, estado y acciones autorizadas en `frontend/src/app/features/contracts/`.
+- [x] T014 [P] [US2] [Plan:3.1] Implementar alta y consulta de clientes con documento CC, CE o NIT único en `backend/app/routes/customers.py`.
+- [x] T015 [P] [US2] [Plan:3.1] Implementar asociación vehículo-contrato y validación de placas ABC123 para carros y ABC12D para motos en `backend/app/vehicles.py` y `backend/app/routes/vehicles.py`.
+- [x] T016 [US2] [Plan:3.2] Implementar creación de contratos con estado inicial Pendiente de Pago y estados permitidos, manteniendo Cancelado como no reactivable, en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
+- [x] T017 [US2] [Plan:3.3] Restringir la autorización de cambio de placa al rol Administrador en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
+- [x] T018 [US2] [Plan:3.1,3.2,3.3] Crear las pantallas Angular de clientes, vehículos y contratos con validaciones de documento, placa, estado y acciones autorizadas en `frontend/src/app/features/contracts/`.
 
 **Checkpoint**: Los contratos conservan los cuatro estados documentados y cada uno queda relacionado con un vehículo; solo un Administrador autoriza cambios de placa.
 
@@ -74,12 +74,12 @@
 
 ### Implementation
 
-- [ ] T019 [US3] [Plan:4.1] Implementar consulta de disponibilidad y compatibilidad Carro↔Carro/Discapacitado, Moto↔Moto y Camioneta↔Camioneta en `backend/app/cells.py` y `backend/app/routes/cells.py`.
-- [ ] T020 [US3] [Plan:4.2] Implementar política de entrada según estado y vencimiento contractual, autorización explícita de Administrador para estados Vencido/Pendiente de Pago/Cancelado y Anti-Passback en `backend/app/transits.py`.
-- [ ] T021 [US3] [Plan:4.2,4.3] Registrar entrada con fecha/hora del servidor, operario y celda; ocupar la celda compatible de forma atómica y rechazar asignaciones ocupadas en `backend/app/transits.py` y `backend/app/routes/transits.py`.
-- [ ] T022 [US3] [Plan:4.3] Registrar salida inmutable con datos del tránsito y liberar inmediatamente la celda asociada en `backend/app/transits.py` y `backend/app/routes/transits.py`.
-- [ ] T023 [US3] [Plan:4.4] Persistir novedades de acceso excepcional y daños preexistentes con severidad Leve/Moderada/Grave y vínculo inmutable al tránsito de entrada en `backend/app/novelties.py` y `backend/app/routes/transits.py`.
-- [ ] T024 [US3] [Plan:4.1,4.2,4.4] Crear vistas Angular de disponibilidad, entrada y salida con selección de celda compatible y captura de novedades físicas en `frontend/src/app/features/parking/`.
+- [x] T019 [US3] [Plan:4.1] Implementar consulta de disponibilidad y compatibilidad Carro↔Carro/Discapacitado, Moto↔Moto y Camioneta↔Camioneta en `backend/app/cells.py` y `backend/app/routes/cells.py`.
+- [x] T020 [US3] [Plan:4.2] Implementar política de entrada según estado y vencimiento contractual, autorización explícita de Administrador para estados Vencido/Pendiente de Pago/Cancelado y Anti-Passback en `backend/app/transits.py`.
+- [x] T021 [US3] [Plan:4.2,4.3] Registrar entrada con fecha/hora del servidor, operario y celda; ocupar la celda compatible de forma atómica y rechazar asignaciones ocupadas en `backend/app/transits.py` y `backend/app/routes/transits.py`.
+- [x] T022 [US3] [Plan:4.3] Registrar salida inmutable con datos del tránsito y liberar inmediatamente la celda asociada en `backend/app/transits.py` y `backend/app/routes/transits.py`.
+- [x] T023 [US3] [Plan:4.4] Persistir novedades de acceso excepcional y daños preexistentes con severidad Leve/Moderada/Grave y vínculo inmutable al tránsito de entrada en `backend/app/novelties.py` y `backend/app/routes/transits.py`.
+- [x] T024 [US3] [Plan:4.1,4.2,4.4] Crear vistas Angular de disponibilidad, entrada y salida con selección de celda compatible y captura de novedades físicas en `frontend/src/app/features/parking/`.
 
 **Checkpoint**: Cada tránsito confirmado respeta sesión, vigencia/excepción, Anti-Passback y compatibilidad; entrada/salida y estado de celda no dejan cambios parciales.
 
@@ -91,12 +91,12 @@
 
 ### Implementation
 
-- [ ] T025 [US4] [Plan:5.1] Asociar cada pago al Operario que abrió la caja vigente y exigir caja abierta en `backend/app/payments.py` y `backend/app/routes/payments.py`.
-- [ ] T026 [US4] [Plan:5.2] Implementar métodos Efectivo/Transferencia Bancaria/Tarjeta, referencia obligatoria para transferencia y activación/prórroga del contrato desde la fecha base definida en `backend/app/payments.py`.
-- [ ] T027 [US4] [Plan:5.3] Generar comprobante de numeración consecutiva única con valor neto recibido al pago, IVA del 19% y datos del cliente en `backend/app/receipts.py`.
-- [ ] T028 [US4] [Plan:5.4] Impedir anulaciones/eliminaciones por Operarios y permitir anulaciones de Administrador con credenciales de confirmación, justificación obligatoria y bitácora en `backend/app/payments.py` y `backend/app/routes/payments.py`.
-- [ ] T029 [US4] [Plan:5.1,5.2,5.3] Crear interfaz Angular para cobro con método, referencia de transferencia y presentación del comprobante en `frontend/src/app/features/payments/`.
-- [ ] T030 [US4] [Plan:5.4] Crear la acción de anulación exclusiva para Administrador con formulario de credenciales y justificación en `frontend/src/app/features/payments/`.
+- [x] T025 [US4] [Plan:5.1] Asociar cada pago al Operario que abrió la caja vigente y exigir caja abierta en `backend/app/payments.py` y `backend/app/routes/payments.py`.
+- [x] T026 [US4] [Plan:3.2,5.2] Implementar métodos Efectivo/Transferencia Bancaria/Tarjeta, referencia obligatoria para transferencia y activación/prórroga del contrato desde la fecha base definida en `backend/app/payments.py`.
+- [x] T027 [US4] [Plan:5.3] Generar comprobante de numeración consecutiva única con valor neto recibido al pago, IVA del 19% y datos del cliente en `backend/app/receipts.py`.
+- [x] T028 [US4] [Plan:5.4] Impedir anulaciones/eliminaciones por Operarios y permitir anulaciones de Administrador con credenciales de confirmación, justificación obligatoria y bitácora en `backend/app/payments.py` y `backend/app/routes/payments.py`.
+- [x] T029 [US4] [Plan:5.1,5.2,5.3] Crear interfaz Angular para cobro con método, referencia de transferencia y presentación del comprobante en `frontend/src/app/features/payments/`.
+- [x] T030 [US4] [Plan:5.4] Crear la acción de anulación exclusiva para Administrador con formulario de credenciales y justificación en `frontend/src/app/features/payments/`.
 
 **Checkpoint**: El pago se asocia a la caja/operario correcto, activa el contrato no Cancelado, emite comprobante y solo se anula con confirmación administrativa auditada.
 
@@ -151,3 +151,8 @@
 - No se incluyen tareas de automatización de pruebas, métricas de rendimiento ni infraestructura no especificada.
 - No crear catálogo de tarifas: el importe neto lo proporciona el negocio al cobrar.
 - No habilitar edición/eliminación de tránsitos o eliminación de pagos.
+
+## Phase 8: Convergence
+
+- [x] T031 [Plan:1.2,3.2] Persistir el estado Vencido al detectar contratos Activos con vencimiento superado; permitir cancelación solo a Administradores con justificación obligatoria; conservar los cuatro estados y no reactivar Cancelados. Actualizar `db/schema.sql`, crear migración `db/migrations/001_contract_status_lifecycle.sql` para bases existentes y completar `backend/app/contracts.py`, `backend/app/routes/contracts.py` y `frontend/src/app/features/contracts/` per US2/AC5-AC7, REQ-006 (partial).
+- [x] T032 [Plan:5.3] Mostrar en el comprobante posterior al pago los datos de identificación del cliente usando el comprobante persistido o la respuesta del endpoint existente, en `frontend/src/app/features/payments/payments.component.ts` y `frontend/src/app/features/payments/payments.component.html` per US4/AC6, REQ-023, SC-006 (partial).

@@ -11,7 +11,7 @@ summary:
   covered_plan_items: 17
   missing_plan_items: 0
   coverage_percentage: 100.0
-  total_tasks_generated: 30
+  total_tasks_generated: 32
   orphan_tasks: 0
 
 plan_items:
@@ -20,7 +20,7 @@ plan_items:
     tasks: ["T001", "T002", "T005"]
   - item_id: "1.2"
     description: "Crear persistencia relacional del dominio"
-    tasks: ["T003", "T004"]
+    tasks: ["T003", "T004", "T031"]
   - item_id: "2.1"
     description: "Autenticar usuarios por documento y contraseña"
     tasks: ["T007", "T008"]
@@ -28,7 +28,7 @@ plan_items:
     description: "Exigir sesión activa en las operaciones protegidas"
     tasks: ["T006", "T008", "T009"]
   - item_id: "2.3"
-    description: "Abrir caja y proteger transacciones del operario"
+    description: "Abrir y cerrar caja para proteger transacciones"
     tasks: ["T012", "T013"]
   - item_id: "2.4"
     description: "Integrar inicio de sesión en la interfaz"
@@ -38,7 +38,7 @@ plan_items:
     tasks: ["T014", "T015", "T018"]
   - item_id: "3.2"
     description: "Gestionar contratos y su ciclo de vida"
-    tasks: ["T016", "T018", "T026"]
+    tasks: ["T016", "T018", "T026", "T031"]
   - item_id: "3.3"
     description: "Autorizar cambios de placa"
     tasks: ["T017", "T018"]
@@ -56,7 +56,7 @@ plan_items:
     tasks: ["T023", "T024"]
   - item_id: "5.1"
     description: "Asociar los pagos al turno de caja"
-    tasks: ["T025"]
+    tasks: ["T012", "T025"]
   - item_id: "5.2"
     description: "Registrar pagos y renovar contratos"
     tasks: ["T026", "T029"]
@@ -76,9 +76,9 @@ upstream_trace:
     tasks: ["T001", "T002", "T005"]
     full_trace: "REQ-001,REQ-002 -> Step 1.1 -> T001,T002,T005"
   - plan_item: "1.2"
-    source_requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-011", "REQ-014", "REQ-015", "REQ-019", "REQ-023", "REQ-025", "REQ-027"]
-    tasks: ["T003", "T004"]
-    full_trace: "REQ-004,REQ-005,REQ-006,REQ-011,REQ-014,REQ-015,REQ-019,REQ-023,REQ-025,REQ-027 -> Step 1.2 -> T003,T004"
+    source_requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-011", "REQ-014", "REQ-015", "REQ-019", "REQ-023", "REQ-025", "REQ-027", "REQ-028"]
+    tasks: ["T003", "T004", "T031"]
+    full_trace: "REQ-004,REQ-005,REQ-006,REQ-011,REQ-014,REQ-015,REQ-019,REQ-023,REQ-025,REQ-027,REQ-028 -> Step 1.2 -> T003,T004,T031"
   - plan_item: "2.1"
     source_requirements: ["REQ-001"]
     tasks: ["T007", "T008"]
@@ -88,9 +88,9 @@ upstream_trace:
     tasks: ["T006", "T008", "T009"]
     full_trace: "REQ-002 -> Step 2.2 -> T006,T008,T009"
   - plan_item: "2.3"
-    source_requirements: ["REQ-003", "REQ-019"]
+    source_requirements: ["REQ-003", "REQ-019", "REQ-028"]
     tasks: ["T012", "T013"]
-    full_trace: "REQ-003,REQ-019 -> Step 2.3 -> T012,T013"
+    full_trace: "REQ-003,REQ-019,REQ-028 -> Step 2.3 -> T012,T013"
   - plan_item: "2.4"
     source_requirements: ["REQ-001", "REQ-002"]
     tasks: ["T010", "T011"]
@@ -101,8 +101,8 @@ upstream_trace:
     full_trace: "REQ-004,REQ-005,REQ-026 -> Step 3.1 -> T014,T015,T018"
   - plan_item: "3.2"
     source_requirements: ["REQ-006", "REQ-020"]
-    tasks: ["T016", "T018", "T026"]
-    full_trace: "REQ-006,REQ-020 -> Step 3.2 -> T016,T018,T026"
+    tasks: ["T016", "T018", "T026", "T031"]
+    full_trace: "REQ-006,REQ-020 -> Step 3.2 -> T016,T018,T026,T031"
   - plan_item: "3.3"
     source_requirements: ["REQ-007"]
     tasks: ["T017", "T018"]
@@ -124,9 +124,9 @@ upstream_trace:
     tasks: ["T023", "T024"]
     full_trace: "REQ-010,REQ-013,REQ-014 -> Step 4.4 -> T023,T024"
   - plan_item: "5.1"
-    source_requirements: ["REQ-003", "REQ-027"]
-    tasks: ["T025"]
-    full_trace: "REQ-003,REQ-027 -> Step 5.1 -> T025"
+    source_requirements: ["REQ-003", "REQ-027", "REQ-028"]
+    tasks: ["T012", "T025"]
+    full_trace: "REQ-003,REQ-027,REQ-028 -> Step 5.1 -> T012,T025"
   - plan_item: "5.2"
     source_requirements: ["REQ-020", "REQ-021", "REQ-022"]
     tasks: ["T026", "T029"]

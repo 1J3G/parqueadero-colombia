@@ -1,0 +1,75 @@
+<section class="page-heading">
+  <p class="eyebrow">Operación del parqueadero</p>
+  <h1>Entradas y salidas</h1>
+</section>
+
+<section class="panel">
+  <label>Contrato y vehículo
+    <select name="contract" required [ngModel]="contractId()" (ngModelChange)="selectContract($event)">
+      <option [ngValue]="null">Seleccione un contrato</option>
+      @for (contract of contracts(); track contract.id) {
+        <option [ngValue]="contract.id">#{{ contract.id }} · {{ contract.plate }} · {{ contract.customer_full_name }} · {{ contract.status }}</option>
+      }
+    </select>
+  </label>
+  @if (selectedContract(); as contract) {
+    <p class="muted">
+      {{ contract.vehicle_type }} · Vence: {{ contract.expires_on ?? 'Sin pago registrado' }}
+    </p>
+    <div class="columns">
+      <form class="form-grid" (ngSubmit)="registerEntry()">
+        <h2>Registrar entrada</h2>
+        <label>Celda disponible y compatible
+          <select name="cell" required [ngModel]="cellId()" (ngModelChange)="setCellId($event)">
+            <option [ngValue]="null">Seleccione una celda</option>
+            @for (cell of cells(); track cell.id) {
+              <option [ngValue]="cell.id">{{ cell.label }} · {{ cell.category }}</option>
+            }
+          </select>
+        </label>
+        <label class="check-row">
+          <input name="exceptionalAccess" type="checkbox" [ngModel]="exceptionalAccess()" (ngModelChange)="exceptionalAccess.set($event)" />
+          Solicitar acceso excepcional de Administrador
+        </label>
+        @if (exceptionalAccess()) {
+          <label>Documento del Administrador
+            <input name="administratorDocument" required [ngModel]="administratorDocument()" (ngModelChange)="administratorDocument.set($event)" />
+          </label>
+          <label>Contraseña de confirmación
+            <input name="administratorPassword" type="password" required [ngModel]="administratorPassword()" (ngModelChange)="administratorPassword.set($event)" />
+          </label>
+          <label>Novedad de acceso excepcional
+            <textarea name="exceptionalNovelty" required [ngModel]="exceptionalNovelty()" (ngModelChange)="exceptionalNovelty.set($event)"></textarea>
+          </label>
+        }
+        <details>
+          <summary>Registrar daño preexistente (opcional)</summary>
+          <label>Clasificación
+            <select name="damageType" [ngModel]="damageType()" (ngModelChange)="damageType.set($event)">
+              <option>Golpe</option><option>Rayón</option><option>Falla</option>
+            </select>
+          </label>
+          <label>Descripción
+            <textarea name="damageDescription" [ngModel]="damageDescription()" (ngModelChange)="damageDescription.set($event)"></textarea>
+          </label>
+          <label>Severidad
+            <select name="damageSeverity" [required]="damageDescription().trim().length > 0" [ngModel]="damageSeverity()" (ngModelChange)="damageSeverity.set($event)">
+              <option value="">Seleccione severidad</option>
+              <option>Leve</option><option>Moderada</option><option>Grave</option>
+            </select>
+          </label>
+        </details>
+        <button class="primary" type="submit" [disabled]="submitting() || cellId() === null">
+          Confirmar entrada
+        </button>
+      </form>
+      <div class="panel inset">
+        <h2>Registrar salida</h2>
+        <p class="muted">La salida libera la celda asociada al tránsito de entrada.</p>
+        <button class="secondary" type="button" [disabled]="submitting()" (click)="registerExit()">
+          Confirmar salida
+        </button>
+      </div>
+    </div>
+  }
+</section>

@@ -7,8 +7,8 @@ metadata:
   target_plan: "specs/001-parking-operations/plan.md"
 
 summary:
-  total_requirements: 27
-  covered_requirements: 27
+  total_requirements: 28
+  covered_requirements: 28
   missing_requirements: 0
   coverage_percentage: 100.0
 
@@ -76,7 +76,7 @@ requirements:
           description: "Registrar clientes y vehículos únicos"
     notes: ""
   - req_id: "REQ-006"
-    req_description: "Estados válidos y estado inicial del contrato"
+    req_description: "Estados válidos, vencimiento automático y cancelación administrativa justificada"
     priority: "P1"
     plan_mapping:
       phase: "Phase-1"
@@ -314,6 +314,20 @@ requirements:
       items:
         - item_id: "1.2"
           description: "Crear persistencia relacional del dominio"
+        - item_id: "5.1"
+          description: "Asociar los pagos al turno de caja"
+    notes: ""
+  - req_id: "REQ-028"
+    req_description: "Cerrar caja por el titular o Administrador sin arqueo"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Autenticación y acceso operativo"
+      items:
+        - item_id: "1.2"
+          description: "Crear persistencia relacional del dominio"
+        - item_id: "2.3"
+          description: "Abrir y cerrar caja para proteger transacciones"
         - item_id: "5.1"
           description: "Asociar los pagos al turno de caja"
     notes: ""

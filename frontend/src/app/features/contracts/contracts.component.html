@@ -1,0 +1,103 @@
+<section class="page-heading">
+  <p class="eyebrow">Clientes y mensualidades</p>
+  <h1>Clientes y contratos</h1>
+</section>
+
+<div class="columns">
+  <section class="panel">
+    <h2>Registrar cliente</h2>
+    <form class="form-grid" (ngSubmit)="createCustomer()">
+      <label>Tipo de documento
+        <select name="customerType" [ngModel]="customerType()" (ngModelChange)="customerType.set($event)">
+          <option>CC</option><option>CE</option><option>NIT</option>
+        </select>
+      </label>
+      <label>Documento
+        <input name="customerDocument" required [ngModel]="customerDocument()" (ngModelChange)="customerDocument.set($event)" />
+      </label>
+      <label>Nombre completo
+        <input name="customerName" required [ngModel]="customerName()" (ngModelChange)="customerName.set($event)" />
+      </label>
+      <button class="primary" type="submit">Registrar cliente</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Crear contrato de mensualidad</h2>
+    <form class="form-grid" (ngSubmit)="createContract()">
+      <label>Cliente
+        <select name="selectedCustomer" required [ngModel]="selectedCustomer()" (ngModelChange)="setSelectedCustomer($event)">
+          <option [ngValue]="null">Seleccione</option>
+          @for (customer of customers(); track customer.id) {
+            <option [ngValue]="customer.id">{{ customer.full_name }} · {{ customer.document }}</option>
+          }
+        </select>
+      </label>
+      <label>Tipo de vehículo
+        <select name="vehicleType" [ngModel]="vehicleType()" (ngModelChange)="vehicleType.set($event)">
+          <option>Carro</option><option>Moto</option><option>Camioneta</option>
+        </select>
+      </label>
+      <label>Placa
+        <input name="plate" required maxlength="6" [ngModel]="plate()" (ngModelChange)="plate.set($event.toUpperCase())" />
+      </label>
+      <button class="primary" type="submit" [disabled]="!selectedCustomer()">Crear contrato</button>
+    </form>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Contratos</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Cliente</th><th>Placa</th><th>Tipo</th><th>Estado</th><th>Vencimiento</th></tr></thead>
+      <tbody>
+        @for (contract of contracts(); track contract.id) {
+          <tr>
+            <td>{{ contract.customer_full_name }} · {{ contract.customer_document }}</td>
+            <td>{{ contract.plate }}</td>
+            <td>{{ contract.vehicle_type }}</td>
+            <td>{{ contract.status }}</td>
+            <td>{{ contract.expires_on ? (contract.expires_on | date:'mediumDate') : 'Sin pago' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="muted">No hay contratos registrados.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (isAdministrator()) {
+    <form class="form-grid admin-form" (ngSubmit)="changePlate()">
+      <h3>Autorizar cambio de placa</h3>
+      <label>Contrato
+        <select name="contractToChange" required [ngModel]="contractToChange()" (ngModelChange)="setContractToChange($event)">
+          <option [ngValue]="null">Seleccione</option>
+          @for (contract of contracts(); track contract.id) {
+            <option [ngValue]="contract.id">#{{ contract.id }} · {{ contract.plate }}</option>
+          }
+        </select>
+      </label>
+      <label>Nueva placa
+        <input name="replacementPlate" required maxlength="6" [ngModel]="replacementPlate()" (ngModelChange)="replacementPlate.set($event.toUpperCase())" />
+      </label>
+      <button class="secondary" type="submit" [disabled]="!contractToChange()">Cambiar placa</button>
+    </form>
+    <form class="form-grid admin-form" (ngSubmit)="cancelContract()">
+      <h3>Cancelar contrato</h3>
+      <label>Contrato
+        <select name="contractToCancel" required [ngModel]="contractToCancel()" (ngModelChange)="setContractToCancel($event)">
+          <option [ngValue]="null">Seleccione</option>
+          @for (contract of contracts(); track contract.id) {
+            @if (contract.status !== 'Cancelado') {
+              <option [ngValue]="contract.id">#{{ contract.id }} · {{ contract.plate }} · {{ contract.status }}</option>
+            }
+          }
+        </select>
+      </label>
+      <label>Justificación obligatoria
+        <textarea name="cancellationJustification" required [ngModel]="cancellationJustification()" (ngModelChange)="cancellationJustification.set($event)"></textarea>
+      </label>
+      <button class="danger" type="submit" [disabled]="!contractToCancel() || !cancellationJustification().trim()">Cancelar contrato</button>
+    </form>
+  }
+</section>

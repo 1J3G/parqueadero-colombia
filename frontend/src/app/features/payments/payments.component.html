@@ -1,0 +1,79 @@
+<section class="page-heading">
+  <p class="eyebrow">Recaudo mensual</p>
+  <h1>Pagos y comprobantes</h1>
+</section>
+
+<section class="panel">
+  <h2>Registrar pago</h2>
+  @if (!isOperator()) {
+    <p class="notice">El cobro de mensualidades debe realizarlo un Operario.</p>
+  } @else if (!cashOpen()) {
+    <p class="notice">Debe abrir una caja antes de registrar pagos.</p>
+    <a class="button-link" routerLink="/cash">Ir a apertura de caja</a>
+  } @else {
+    <form class="form-grid" (ngSubmit)="createPayment()">
+      <label>Contrato
+        <select name="contract" required [ngModel]="contractId()" (ngModelChange)="setContractId($event)">
+          <option [ngValue]="null">Seleccione</option>
+          @for (contract of contracts(); track contract.id) {
+            <option [ngValue]="contract.id">#{{ contract.id }} · {{ contract.plate }} · {{ contract.customer_full_name }} · {{ contract.status }}</option>
+          }
+        </select>
+      </label>
+      <label>Meses pagados
+        <input name="paidMonths" type="number" min="1" step="1" required [ngModel]="paidMonths()" (ngModelChange)="paidMonths.set(+$event)" />
+      </label>
+      <label>Valor neto fijado por el negocio (COP)
+        <input name="netAmount" type="number" min="0.01" step="0.01" required [ngModel]="netAmount()" (ngModelChange)="setNetAmount($event)" />
+      </label>
+      <label>Método de pago
+        <select name="paymentMethod" [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
+          <option>Efectivo</option><option>Transferencia Bancaria</option><option>Tarjeta Crédito/Débito</option>
+        </select>
+      </label>
+      @if (paymentMethod() === 'Transferencia Bancaria') {
+        <label>Referencia de transferencia
+          <input name="referenceCode" required [ngModel]="referenceCode()" (ngModelChange)="referenceCode.set($event)" />
+        </label>
+      }
+      <button class="primary" type="submit" [disabled]="submitting() || !contractId()">
+        {{ submitting() ? 'Procesando…' : 'Registrar pago' }}
+      </button>
+    </form>
+  }
+</section>
+
+@if (result(); as payment) {
+  <section class="panel receipt">
+    <p class="eyebrow">Comprobante fiscal</p>
+    <h2>Comprobante N.º {{ payment.receipt_number }}</h2>
+    <dl>
+      <dt>Cliente</dt><dd>{{ payment.customer_full_name }}</dd>
+      <dt>Documento</dt><dd>{{ payment.customer_document_type }} {{ payment.customer_document }}</dd>
+      <dt>Pago</dt><dd>#{{ payment.payment_id }}</dd>
+      <dt>Valor neto</dt><dd>{{ payment.net_amount | currency:'COP':'symbol-narrow' }}</dd>
+      <dt>IVA (19%)</dt><dd>{{ payment.tax_amount | currency:'COP':'symbol-narrow' }}</dd>
+      <dt>Total</dt><dd>{{ payment.total_amount | currency:'COP':'symbol-narrow' }}</dd>
+      <dt>Vigencia hasta</dt><dd>{{ payment.expires_on | date:'mediumDate' }}</dd>
+    </dl>
+  </section>
+}
+
+@if (isAdministrator()) {
+  <section class="panel">
+    <h2>Anular pago</h2>
+    <p class="muted">La anulación requiere confirmar su contraseña y dejar una justificación en auditoría.</p>
+    <form class="form-grid" (ngSubmit)="voidPayment()">
+      <label>Número de pago
+        <input name="voidPaymentId" type="number" min="1" required [ngModel]="voidPaymentId()" (ngModelChange)="setVoidPaymentId($event)" />
+      </label>
+      <label>Contraseña de confirmación
+        <input name="administratorPassword" type="password" required [ngModel]="administratorPassword()" (ngModelChange)="administratorPassword.set($event)" />
+      </label>
+      <label>Justificación
+        <textarea name="justification" required [ngModel]="justification()" (ngModelChange)="justification.set($event)"></textarea>
+      </label>
+      <button class="danger" type="submit" [disabled]="submitting() || !voidPaymentId()">Confirmar anulación</button>
+    </form>
+  </section>
+}

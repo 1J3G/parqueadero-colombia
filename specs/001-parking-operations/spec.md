@@ -18,16 +18,18 @@
 - Q: Cuando se paga o renueva una mensualidad, ¿desde qué fecha deben contarse los meses pagados para calcular el nuevo vencimiento? → A: Si el contrato aún está vigente, desde su vencimiento actual; si ya venció o es nuevo, desde la fecha del pago.
 - Q: ¿Puede un pago de mensualidad reactivar un contrato que está Cancelado, o debe crearse un contrato nuevo? → A: No se reactiva; debe crearse un contrato nuevo.
 - Q: ¿Cómo debe obtenerse el valor neto de la mensualidad antes de calcular el IVA del comprobante fiscal? → A: El negocio fija la tarifa fuera del sistema y proporciona el valor neto al registrar el pago.
+- Q: ¿Cómo debe manejarse el cierre de caja? → A: El titular puede cerrar su caja y un Administrador puede cerrar cualquier caja abierta. Se registra la fecha y hora exactas del servidor, sin arqueo ni monto final.
+- Q: ¿Cómo se alcanza el estado Vencido y quién puede cancelar un contrato? → A: Al detectar que la fecha del servidor supera el vencimiento de un contrato Activo, el sistema persiste el estado Vencido. Solo un Administrador puede cancelar un contrato y debe proporcionar una justificación obligatoria.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Acceso autenticado y consulta de disponibilidad (Priority: P1)
 
-Un operario o administrador inicia sesión con su documento de identidad y contraseña. Con una sesión activa puede consultar la disponibilidad de celdas; un operario solo puede procesar transacciones cuando tiene una caja abierta a su nombre.
+Un operario o administrador inicia sesión con su documento de identidad y contraseña. Con una sesión activa puede consultar la disponibilidad de celdas; un operario solo puede procesar transacciones cuando tiene una caja abierta a su nombre. El titular de la caja puede cerrarla y un administrador puede cerrar cualquier caja abierta.
 
-**Why this priority**: La autenticación y la caja abierta son condiciones de acceso para las operaciones del sistema.
+**Why this priority**: La autenticación y el ciclo de apertura/cierre de caja controlan el acceso del operario a las operaciones del sistema.
 
-**Independent Test**: Intentar consultar disponibilidad y procesar operaciones con sesión activa e inactiva, y con caja abierta y cerrada para el operario.
+**Independent Test**: Intentar consultar disponibilidad y procesar operaciones con sesión activa e inactiva, y con caja abierta y cerrada para el operario; cerrar una caja y comprobar que deja de habilitar transacciones y permite una nueva apertura.
 
 **Acceptance Scenarios**:
 
@@ -35,6 +37,9 @@ Un operario o administrador inicia sesión con su documento de identidad y contr
 2. **Given** una sesión inactiva, **When** el usuario intenta consultar disponibilidad, registrar una entrada o salida, o procesar un pago, **Then** el sistema rechaza la operación.
 3. **Given** un operario sin caja abierta a su nombre, **When** intenta procesar una transacción, **Then** el sistema la rechaza.
 4. **Given** credenciales inválidas, **When** el usuario intenta iniciar sesión, **Then** no obtiene una sesión autenticada.
+5. **Given** una caja abierta, **When** su titular la cierra, **Then** se registra la fecha y hora del servidor y la caja deja de habilitar transacciones; el cierre no registra un monto final.
+6. **Given** una caja abierta, **When** un Administrador la cierra, **Then** se registra la fecha y hora del servidor y la caja deja de habilitar transacciones.
+7. **Given** una caja cerrada, **When** el titular abre una nueva caja con base de efectivo, **Then** la nueva apertura queda disponible para sus transacciones.
 
 ### User Story 2 - Administrar clientes, contratos y vehículos (Priority: P1)
 
@@ -52,6 +57,7 @@ Un usuario registra clientes identificados de forma única, vincula cada contrat
 4. **Given** un contrato existente, **When** un usuario que no es Administrador intenta cambiar su placa, **Then** el sistema deniega el cambio; si la autorización la realiza un Administrador, **Then** el cambio puede ser autorizado.
 5. **Given** un contrato, **When** se consulta o actualiza su estado, **Then** solo puede ser Pendiente de Pago, Activo, Vencido o Cancelado.
 6. **Given** un contrato Cancelado, **When** el cliente vuelve a contratar una mensualidad, **Then** se debe crear un contrato nuevo y no reactivar el contrato Cancelado.
+7. **Given** un contrato Activo cuyo vencimiento ya pasó, **When** el sistema lo detecta durante una consulta u operación, **Then** persiste el estado Vencido; solo un Administrador puede cancelar un contrato y la cancelación requiere una justificación obligatoria.
 
 ### User Story 3 - Registrar entradas, salidas y novedades físicas (Priority: P1)
 
@@ -111,7 +117,7 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **REQ-003**: El sistema MUST impedir que un operario procese transacciones si no tiene una caja abierta a su nombre.
 - **REQ-004**: El sistema MUST identificar de forma única a cada cliente por su documento CC, CE o NIT.
 - **REQ-005**: El sistema MUST vincular cada contrato de mensualidad con un único vehículo por su placa.
-- **REQ-006**: El sistema MUST aceptar los estados contractuales Pendiente de Pago, Activo, Vencido y Cancelado, asignar Pendiente de Pago por defecto al contrato nuevo sin pago y exigir un contrato nuevo para sustituir uno Cancelado.
+- **REQ-006**: El sistema MUST aceptar exclusivamente los estados contractuales Pendiente de Pago, Activo, Vencido y Cancelado; asignar Pendiente de Pago por defecto al contrato nuevo sin pago; persistir Vencido cuando detecte que la fecha del servidor supera el vencimiento de un contrato Activo; permitir cancelar contratos únicamente a un Administrador con justificación obligatoria; y exigir un contrato nuevo para sustituir uno Cancelado.
 - **REQ-007**: El sistema MUST permitir únicamente a un usuario con rol Administrador autorizar el cambio de placa de un contrato existente.
 - **REQ-008**: El sistema MUST permitir la entrada automatizada solo si el contrato está Activo y la fecha actual es menor o igual a su fecha de vencimiento.
 - **REQ-009**: El sistema MUST bloquear nuevas entradas para vehículos Dentro del Parqueadero y salidas para vehículos Fuera del Parqueadero.
@@ -133,6 +139,7 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **REQ-025**: El sistema MUST permitir anular pagos únicamente a un Administrador, después de solicitar sus credenciales de confirmación y una justificación obligatoria, y registrar la justificación en la bitácora de auditoría.
 - **REQ-026**: El sistema MUST validar las placas colombianas especificadas: ABC123 para carros y ABC12D para motos, y rechazar las que no correspondan al formato de su tipo de vehículo.
 - **REQ-027**: El sistema MUST asociar cada pago recibido al operario que abrió la caja vigente.
+- **REQ-028**: El sistema MUST permitir al titular cerrar su caja abierta y a un Administrador cerrar cualquier caja abierta; registrará la fecha y hora exactas del servidor, dejará la caja no disponible para nuevas transacciones y no solicitará ni registrará un monto final de cierre.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -140,7 +147,7 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **Cliente**: Persona identificada de forma única por CC, CE o NIT.
 - **Vehículo**: Vehículo identificado por placa y tipo, asociado de forma exclusiva a un contrato.
 - **Contrato de mensualidad**: Relación entre un cliente y un único vehículo, con estado y fecha de vencimiento.
-- **Caja**: Apertura de caja realizada por un operario con base de efectivo y asociada a su turno.
+- **Caja**: Apertura realizada por un operario con base de efectivo, asociada a su turno y cerrada por el titular o un Administrador con fecha y hora del servidor.
 - **Tránsito**: Registro inmutable de entrada o salida que identifica fecha y hora del servidor, operario y celda.
 - **Novedad**: Descripción de acceso excepcional o daño preexistente; la novedad física incluye severidad y queda vinculada al tránsito de entrada.
 - **Celda**: Espacio con categoría fija y estado Disponible u Ocupada.
@@ -160,6 +167,7 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **SC-006**: El 100% de los pagos exitosos generan un comprobante con numeración consecutiva única, valor neto, IVA del 19% y datos del cliente.
 - **SC-007**: El 100% de las anulaciones de pago registradas tienen autorización de Administrador, credenciales de confirmación y justificación de auditoría.
 - **SC-008**: El 100% de los pagos recibidos quedan asociados al operario que abrió la caja vigente.
+- **SC-009**: El 100% de los cierres de caja quedan registrados con hora del servidor y no habilitan transacciones posteriores; el titular puede abrir una caja nueva.
 
 ## Assumptions
 
@@ -168,4 +176,4 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - La categoría y severidad de novedades de daños físicos no se aplican automáticamente a las novedades de acceso excepcional, porque son registros con propósitos distintos en los requisitos entregados.
 - El negocio fija la tarifa de la mensualidad fuera del sistema y proporciona su valor neto al registrar el pago; el sistema no mantiene tarifas. Los meses pagados se cuentan desde el vencimiento actual para un contrato vigente y desde la fecha del pago para uno vencido o nuevo.
 - Un contrato Cancelado no se reactiva por pago; se requiere crear un contrato nuevo para volver a contratar la mensualidad.
-- La especificación no agrega mecanismos de autenticación, reglas de elegibilidad para otros tipos de vehículo en celdas Discapacitado ni acciones adicionales de caja que no fueron indicados.
+- El cierre de caja registra únicamente la fecha y hora del servidor; no realiza arqueo ni exige monto final. El titular puede cerrar su caja y un Administrador puede cerrar cualquier caja abierta.

@@ -1,0 +1,17 @@
+.login-page {
+  display: grid;
+  min-height: 78vh;
+  place-items: center;
+}
+
+.login-panel {
+  width: min(100%, 28rem);
+}
+
+.login-panel h1 {
+  margin: 0.25rem 0;
+}
+
+.login-panel .muted {
+  margin-bottom: 1.5rem;
+}

@@ -1,0 +1,28 @@
+@if (auth.currentUser(); as user) {
+  <header class="topbar">
+    <a class="brand" routerLink="/cash">
+      <span class="brand-mark">AC</span>
+      <span>Autos Colombia<small>Gestión de parqueadero</small></span>
+    </a>
+    <nav aria-label="Navegación principal">
+      <a routerLink="/cash" routerLinkActive="active">Caja</a>
+      <a routerLink="/contracts" routerLinkActive="active">Clientes y contratos</a>
+      <a routerLink="/parking" routerLinkActive="active">Entradas y salidas</a>
+      <a routerLink="/payments" routerLinkActive="active">Pagos</a>
+    </nav>
+    <div class="user-menu">
+      <span>{{ user.document }} <small>{{ user.role }}</small></span>
+      <button class="quiet" type="button" (click)="logout()">Salir</button>
+    </div>
+  </header>
+}
+
+<main class="content">
+  @if (errors.message()) {
+    <div class="error-banner" role="alert">
+      <span>{{ errors.message() }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="errors.clear()">×</button>
+    </div>
+  }
+  <router-outlet />
+</main>

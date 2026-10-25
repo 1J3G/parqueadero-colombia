@@ -1,0 +1,371 @@
+metadata:
+  generated: "2026-10-25"
+  source_tasks: "specs/001-parking-operations/tasks.md"
+  last_updated: "2026-10-25"
+
+summary:
+  total_tasks: 32
+  completed_tasks: 32
+  in_progress_tasks: 0
+  pending_tasks: 0
+  completion_percentage: 100.0
+
+tasks:
+  - task_id: "T001"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/requirements.txt"]
+    upstream_trace:
+      plan_item: "1.1"
+      requirements: ["REQ-001", "REQ-002"]
+      full_trace: "REQ-001,REQ-002 -> Step 1.1 -> T001 -> backend/requirements.txt"
+  - task_id: "T002"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/package.json", "frontend/angular.json", "frontend/src/main.ts", "frontend/src/app/app.config.ts"]
+    upstream_trace:
+      plan_item: "1.1"
+      requirements: ["REQ-001", "REQ-002"]
+      full_trace: "REQ-001,REQ-002 -> Step 1.1 -> T002 -> frontend/"
+  - task_id: "T003"
+    status: "completed"
+    implementation:
+      files_changed: ["db/schema.sql"]
+    upstream_trace:
+      plan_item: "1.2"
+      requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-011", "REQ-014", "REQ-015", "REQ-019", "REQ-023", "REQ-025", "REQ-027", "REQ-028"]
+      full_trace: "REQ-004,REQ-005,REQ-006,REQ-011,REQ-014,REQ-015,REQ-019,REQ-023,REQ-025,REQ-027,REQ-028 -> Step 1.2 -> T003 -> db/schema.sql"
+  - task_id: "T004"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/database.py"]
+    upstream_trace:
+      plan_item: "1.2"
+      requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-011", "REQ-014", "REQ-015", "REQ-019", "REQ-023", "REQ-025", "REQ-027", "REQ-028"]
+      full_trace: "REQ-004,REQ-005,REQ-006,REQ-011,REQ-014,REQ-015,REQ-019,REQ-023,REQ-025,REQ-027,REQ-028 -> Step 1.2 -> T004 -> backend/app/database.py"
+  - task_id: "T005"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/main.py", "backend/app/errors.py", "backend/app/routes/"]
+    upstream_trace:
+      plan_item: "1.1"
+      requirements: ["REQ-001", "REQ-002"]
+      full_trace: "REQ-001,REQ-002 -> Step 1.1 -> T005 -> backend/app/"
+  - task_id: "T006"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/core/api-error.interceptor.ts", "frontend/src/app/core/api-error.service.ts"]
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["REQ-002"]
+      full_trace: "REQ-002 -> Step 2.2 -> T006 -> frontend/src/app/core/"
+  - task_id: "T007"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/auth.py"]
+    upstream_trace:
+      plan_item: "2.1"
+      requirements: ["REQ-001"]
+      full_trace: "REQ-001 -> Step 2.1 -> T007 -> backend/app/auth.py"
+  - task_id: "T008"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/auth.py"]
+    upstream_trace:
+      plan_item: "2.1,2.2"
+      requirements: ["REQ-001", "REQ-002"]
+      full_trace: "REQ-001,REQ-002 -> Step 2.1 -> T008 -> backend/app/routes/auth.py"
+  - task_id: "T009"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/auth.py", "backend/app/main.py"]
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["REQ-002"]
+      full_trace: "REQ-002 -> Step 2.2 -> T009 -> backend/app/auth.py,backend/app/main.py"
+  - task_id: "T010"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/auth/login.component.ts", "frontend/src/app/features/auth/login.component.html", "frontend/src/app/core/auth.service.ts"]
+    upstream_trace:
+      plan_item: "2.4"
+      requirements: ["REQ-001", "REQ-002"]
+      full_trace: "REQ-001,REQ-002 -> Step 2.4 -> T010 -> frontend/src/app/features/auth/,frontend/src/app/core/auth.service.ts"
+  - task_id: "T011"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/core/auth.guard.ts", "frontend/src/app/app.routes.ts"]
+    upstream_trace:
+      plan_item: "2.4"
+      requirements: ["REQ-001", "REQ-002"]
+      full_trace: "REQ-001,REQ-002 -> Step 2.4 -> T011 -> frontend/src/app/core/auth.guard.ts,frontend/src/app/app.routes.ts"
+  - task_id: "T012"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/cash.py", "backend/app/routes/cash.py"]
+    upstream_trace:
+      plan_item: "2.3,5.1"
+      requirements: ["REQ-003", "REQ-019", "REQ-027", "REQ-028"]
+      full_trace: "REQ-003,REQ-019,REQ-027,REQ-028 -> Step 2.3,5.1 -> T012 -> backend/app/cash.py,backend/app/routes/cash.py"
+  - task_id: "T013"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/cash/cash-open.component.ts", "frontend/src/app/features/cash/cash-open.component.html"]
+    upstream_trace:
+      plan_item: "2.3"
+      requirements: ["REQ-003", "REQ-019", "REQ-028"]
+      full_trace: "REQ-003,REQ-019,REQ-028 -> Step 2.3 -> T013 -> frontend/src/app/features/cash/"
+  - task_id: "T014"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/customers.py"]
+    upstream_trace:
+      plan_item: "3.1"
+      requirements: ["REQ-004"]
+      full_trace: "REQ-004 -> Step 3.1 -> T014 -> backend/app/routes/customers.py"
+  - task_id: "T015"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/vehicles.py", "backend/app/routes/vehicles.py"]
+    upstream_trace:
+      plan_item: "3.1"
+      requirements: ["REQ-005", "REQ-026"]
+      full_trace: "REQ-005,REQ-026 -> Step 3.1 -> T015 -> backend/app/vehicles.py,backend/app/routes/vehicles.py"
+  - task_id: "T016"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/contracts.py", "backend/app/routes/contracts.py"]
+    upstream_trace:
+      plan_item: "3.2"
+      requirements: ["REQ-006", "REQ-020"]
+      full_trace: "REQ-006,REQ-020 -> Step 3.2 -> T016 -> backend/app/contracts.py,backend/app/routes/contracts.py"
+  - task_id: "T017"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/contracts.py", "backend/app/routes/contracts.py"]
+    upstream_trace:
+      plan_item: "3.3"
+      requirements: ["REQ-007"]
+      full_trace: "REQ-007 -> Step 3.3 -> T017 -> backend/app/contracts.py,backend/app/routes/contracts.py"
+  - task_id: "T018"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/contracts/contracts.component.ts", "frontend/src/app/features/contracts/contracts.component.html"]
+    upstream_trace:
+      plan_item: "3.1,3.2,3.3"
+      requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-007", "REQ-026"]
+      full_trace: "REQ-004,REQ-005,REQ-006,REQ-007,REQ-026 -> Step 3.1,3.2,3.3 -> T018 -> frontend/src/app/features/contracts/"
+  - task_id: "T019"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/cells.py", "backend/app/routes/cells.py"]
+    upstream_trace:
+      plan_item: "4.1"
+      requirements: ["REQ-002", "REQ-015", "REQ-016"]
+      full_trace: "REQ-002,REQ-015,REQ-016 -> Step 4.1 -> T019 -> backend/app/cells.py,backend/app/routes/cells.py"
+  - task_id: "T020"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/transits.py"]
+    upstream_trace:
+      plan_item: "4.2"
+      requirements: ["REQ-008", "REQ-009", "REQ-010"]
+      full_trace: "REQ-008,REQ-009,REQ-010 -> Step 4.2 -> T020 -> backend/app/transits.py"
+  - task_id: "T021"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/transits.py", "backend/app/routes/transits.py"]
+    upstream_trace:
+      plan_item: "4.2,4.3"
+      requirements: ["REQ-008", "REQ-009", "REQ-010", "REQ-011", "REQ-017", "REQ-018"]
+      full_trace: "REQ-008,REQ-009,REQ-010,REQ-011,REQ-017,REQ-018 -> Step 4.2,4.3 -> T021 -> backend/app/transits.py,backend/app/routes/transits.py"
+  - task_id: "T022"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/transits.py", "backend/app/routes/transits.py"]
+    upstream_trace:
+      plan_item: "4.3"
+      requirements: ["REQ-011", "REQ-012", "REQ-017", "REQ-018"]
+      full_trace: "REQ-011,REQ-012,REQ-017,REQ-018 -> Step 4.3 -> T022 -> backend/app/transits.py,backend/app/routes/transits.py"
+  - task_id: "T023"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/novelties.py", "backend/app/routes/transits.py"]
+    upstream_trace:
+      plan_item: "4.4"
+      requirements: ["REQ-010", "REQ-013", "REQ-014"]
+      full_trace: "REQ-010,REQ-013,REQ-014 -> Step 4.4 -> T023 -> backend/app/novelties.py,backend/app/routes/transits.py"
+  - task_id: "T024"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/parking/parking.component.ts", "frontend/src/app/features/parking/parking.component.html"]
+    upstream_trace:
+      plan_item: "4.1,4.2,4.4"
+      requirements: ["REQ-002", "REQ-008", "REQ-009", "REQ-010", "REQ-013", "REQ-015", "REQ-016"]
+      full_trace: "REQ-002,REQ-008,REQ-009,REQ-010,REQ-013,REQ-015,REQ-016 -> Step 4.1,4.2,4.4 -> T024 -> frontend/src/app/features/parking/"
+  - task_id: "T025"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/payments.py", "backend/app/routes/payments.py"]
+    upstream_trace:
+      plan_item: "5.1"
+      requirements: ["REQ-003", "REQ-027"]
+      full_trace: "REQ-003,REQ-027 -> Step 5.1 -> T025 -> backend/app/payments.py,backend/app/routes/payments.py"
+  - task_id: "T026"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/payments.py", "backend/app/routes/payments.py"]
+    upstream_trace:
+      plan_item: "3.2,5.2"
+      requirements: ["REQ-006", "REQ-020", "REQ-021", "REQ-022"]
+      full_trace: "REQ-006,REQ-020,REQ-021,REQ-022 -> Step 3.2,5.2 -> T026 -> backend/app/payments.py,backend/app/routes/payments.py"
+  - task_id: "T027"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/receipts.py", "backend/app/routes/receipts.py"]
+    upstream_trace:
+      plan_item: "5.3"
+      requirements: ["REQ-023"]
+      full_trace: "REQ-023 -> Step 5.3 -> T027 -> backend/app/receipts.py,backend/app/routes/receipts.py"
+  - task_id: "T028"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/payments.py", "backend/app/routes/payments.py"]
+    upstream_trace:
+      plan_item: "5.4"
+      requirements: ["REQ-024", "REQ-025"]
+      full_trace: "REQ-024,REQ-025 -> Step 5.4 -> T028 -> backend/app/payments.py,backend/app/routes/payments.py"
+  - task_id: "T029"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/payments/payments.component.ts", "frontend/src/app/features/payments/payments.component.html"]
+    upstream_trace:
+      plan_item: "5.1,5.2,5.3"
+      requirements: ["REQ-003", "REQ-020", "REQ-021", "REQ-022", "REQ-023"]
+      full_trace: "REQ-003,REQ-020,REQ-021,REQ-022,REQ-023 -> Step 5.1,5.2,5.3 -> T029 -> frontend/src/app/features/payments/"
+  - task_id: "T030"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/payments/payments.component.ts", "frontend/src/app/features/payments/payments.component.html"]
+    upstream_trace:
+      plan_item: "5.4"
+      requirements: ["REQ-024", "REQ-025"]
+      full_trace: "REQ-024,REQ-025 -> Step 5.4 -> T030 -> frontend/src/app/features/payments/"
+  - task_id: "T031"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "db/schema.sql"
+          changes:
+            - change_type: "modified"
+              description: "Persist cancellation actor, justification, and server timestamp."
+        - file: "db/migrations/001_contract_status_lifecycle.sql"
+          changes:
+            - change_type: "added"
+              description: "Add lifecycle columns to databases created with the prior schema."
+        - file: "backend/app/contracts.py"
+          changes:
+            - change_type: "modified"
+              description: "Persist expired active contracts as Vencido and implement justified cancellation."
+        - file: "backend/app/routes/contracts.py"
+          changes:
+            - change_type: "modified"
+              description: "Update expired states on contract listing and expose Administrator-only cancellation."
+        - file: "backend/app/routes/transits.py"
+          changes:
+            - change_type: "modified"
+              description: "Persist expiration before evaluating entry authorization."
+        - file: "backend/app/payments.py"
+          changes:
+            - change_type: "modified"
+              description: "Persist expiration before applying renewal date rules."
+        - file: "frontend/src/app/features/contracts/contracts.component.ts"
+          changes:
+            - change_type: "modified"
+              description: "Submit contract cancellation with required justification."
+        - file: "frontend/src/app/features/contracts/contracts.component.html"
+          changes:
+            - change_type: "modified"
+              description: "Provide Administrator-only contract cancellation controls."
+    verification:
+      build_passed: true
+      test_results:
+        command: "python -m unittest discover -s tests -v; npm test; npm run build; compileall; OpenAPI generation"
+        passed: 14
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "10 backend unit tests, Angular unit test/build, Python compile, and cancellation route registration passed. MySQL migration/runtime integration was not executed."
+    upstream_trace:
+      plan_item: "1.2,3.2"
+      requirements: ["REQ-006"]
+      full_trace: "REQ-006 -> Steps 1.2,3.2 -> T031 -> lifecycle schema, migration, service, API, UI"
+  - task_id: "T032"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "backend/app/payments.py"
+          changes:
+            - change_type: "modified"
+              description: "Return persisted customer identity fields with payment result."
+        - file: "frontend/src/app/features/payments/payments.component.ts"
+          changes:
+            - change_type: "modified"
+              description: "Type customer identity fields in the payment receipt response."
+        - file: "frontend/src/app/features/payments/payments.component.html"
+          changes:
+            - change_type: "modified"
+              description: "Display customer's name and identity document on the receipt."
+    verification:
+      build_passed: true
+      test_results:
+        command: "frontend: npm test; backend: python -m unittest discover -s tests -v"
+        passed: 8
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Angular production build, OpenAPI import, and receipt identity data-flow checks passed; authenticated MySQL payment integration remains unverified."
+    upstream_trace:
+      plan_item: "5.3"
+      requirements: ["REQ-023"]
+      full_trace: "REQ-023 -> Step 5.3 -> T032 -> payment response and receipt UI"
+
+pending_tasks: []
+
+untracked_changes:
+  - file: "backend/app/seed.py"
+    change_type: "added"
+    concern: "Provisioning tool explicitly requested by the user; prompts for credentials and does not hardcode them."
+  - file: "backend/README.md"
+    change_type: "added"
+    concern: "Setup, database configuration, seed, and API usage documentation."
+  - file: "backend/tests/test_domain.py"
+    change_type: "added"
+    concern: "Automated domain-rule tests used as implementation verification."
+  - file: ".gitignore"
+    change_type: "added"
+    concern: "Excludes generated dependencies, caches, build output, logs, and local environment files."
+
+traceability_chain:
+  - chain_id: "TRACE-CASH-CLOSE"
+    requirement: "REQ-028"
+    plan_phase: "Phase-1, Phase-2, Phase-5"
+    plan_item: "1.2, 2.3, 5.1"
+    tasks: ["T003", "T012", "T013"]
+    files: ["db/schema.sql", "backend/app/cash.py", "backend/app/routes/cash.py", "frontend/src/app/features/cash/cash-open.component.ts"]
+    status: "complete"
+  - chain_id: "TRACE-PARKING"
+    requirement: "REQ-008, REQ-009, REQ-010, REQ-011, REQ-012"
+    plan_phase: "Phase-4"
+    plan_item: "4.2, 4.3"
+    tasks: ["T020", "T021", "T022", "T024"]
+    files: ["backend/app/transits.py", "backend/app/routes/transits.py", "frontend/src/app/features/parking/parking.component.ts"]
+    status: "complete"
+
+validation:
+  passed: true
+  errors: []
+  warnings:
+    - "The contract lifecycle migration must be applied once to databases created from the prior schema; it was not executed in this implementation session."
+    - "Authenticated success-path MySQL integration was not run."
+  blocking_issues: []

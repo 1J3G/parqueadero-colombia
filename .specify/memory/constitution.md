@@ -1,9 +1,11 @@
 <!--
 Sync Impact Report
-- Version change: 2.2.0 → 2.3.0
-- Modified rules: RN-02 now treats Cancelado as terminal for renewal (a new
-  contract is required); RN-12 excludes canceled contracts from payment-based
-  reactivation.
+- Version change: 2.3.0 → 2.4.0
+- Modified rules: RN-13 now defines who can close a cash opening, records the
+  server closure timestamp, and excludes a final cash count.
+- Version change: 2.4.0 → 2.5.0
+- Modified rules: RN-02 now defines automatic persisted expiration and
+  Administrator-only cancellation with mandatory justification.
 - Templates: No changes required.
 - Follow-up TODOs: Ninguno.
 -->
@@ -20,7 +22,7 @@ especificado por el usuario.
 ## Core Principles
 
 ### I. Reglas de Dominio como Fuente de Verdad
-Las reglas RN-01 a RN-16 de esta constitución son obligatorias para el diseño
+Las reglas RN-01 a RN-18 de esta constitución son obligatorias para el diseño
 de arquitectura, base de datos, lógica del backend, validaciones y casos de uso.
 La especificación del producto (`spec.md`) debe documentar el comportamiento
 que se construirá y no puede contradecir estas reglas. No se permite código
@@ -88,7 +90,10 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
   tener uno de estos cuatro estados mutuamente excluyentes: Pendiente de Pago,
   Activo, Vencido o Cancelado. Si se crea sin pago asentado, su estado inicial
   es Pendiente de Pago. Un contrato Cancelado no se reactiva; para contratar de
-  nuevo se requiere crear otro contrato.
+  nuevo se requiere crear otro contrato. Cuando la fecha del servidor supera
+  el vencimiento de un contrato Activo, el sistema actualiza su estado a
+  Vencido al detectarlo durante una consulta u operación. Solo un Administrador
+  puede cancelar un contrato y debe proporcionar una justificación obligatoria.
 - **RN-03 (Vigencia contractual)**: El ingreso automatizado solo se permite si
   el contrato asociado está Activo y la fecha actual es menor o igual a su
   fecha de finalización.
@@ -134,11 +139,14 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
   mensualidad nueva o renovación, siempre que el contrato no esté Cancelado,
   cambia inmediatamente el contrato a Activo y extiende la fecha de
   vencimiento según los meses pagados, desbloqueando el acceso del vehículo.
-- **RN-13 (Integridad de recaudo y apertura de caja)**: Un operario solo puede
+- **RN-13 (Integridad de recaudo y ciclo de caja)**: Un operario solo puede
   procesar transacciones si tiene una caja abierta a su nombre. Todo pago
   recibido se asocia al ID del operario que abrió el turno de caja vigente. No
   se registran pagos hasta que el operario realice explícitamente la Apertura
-  de Caja con su base de efectivo.
+  de Caja con su base de efectivo. El titular puede cerrar su caja y un
+  Administrador puede cerrar cualquier caja abierta. El cierre registra la
+  fecha y hora del servidor, deja la caja fuera de uso para nuevas transacciones
+  y no solicita ni registra un monto final.
 - **RN-14 (Comprobante tributario)**: Cada pago de mensualidad procesado emite
   obligatoriamente un comprobante fiscal o documento equivalente con
   numeración consecutiva, valor neto, IVA vigente (19%) y datos de
@@ -188,4 +196,4 @@ Cada revisión de especificación, plan o implementación debe comprobar su
 conformidad con las reglas RN-01 a RN-18, el stack, las restricciones de
 estructura y el proceso de desarrollo guiado por especificación.
 
-**Versión**: 2.3.0 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-24
+**Versión**: 2.5.0 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-24

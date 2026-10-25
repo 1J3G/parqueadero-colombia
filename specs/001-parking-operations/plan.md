@@ -6,7 +6,7 @@
 
 ## Summary
 
-Implementar el flujo de operaciones definido en los 27 requisitos mediante Angular Standalone, una API Python con FastAPI y MySQL local. La estructura se limita a `/frontend`, `/backend` y `/db`; la persistencia relacional y las transacciones de ingreso, salida y pago mantienen las reglas de integridad del dominio. La tarifa neta se recibe al registrar el pago y no se administra un catálogo de tarifas.
+Implementar el flujo de operaciones definido en los 28 requisitos mediante Angular Standalone, una API Python con FastAPI y MySQL local. La estructura se limita a `/frontend`, `/backend` y `/db`; la persistencia relacional y las transacciones de ingreso, salida, caja y pago mantienen las reglas de integridad del dominio. El cierre de caja registra hora de servidor sin arqueo. La tarifa neta se recibe al registrar el pago y no se administra un catálogo de tarifas.
 
 ## Technical Context
 
@@ -24,7 +24,7 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 
 **Performance Goals**: La especificación no fija latencias, concurrencia ni disponibilidad; no se inventan objetivos numéricos.
 
-**Constraints**: Reglas RN-01 a RN-18 y REQ-001 a REQ-027; estructura plana `/frontend`, `/backend`, `/db`; consultas MySQL parametrizadas; no incorporar funcionalidades no especificadas.
+**Constraints**: Reglas RN-01 a RN-18 y REQ-001 a REQ-028; estructura plana `/frontend`, `/backend`, `/db`; consultas MySQL parametrizadas; no incorporar funcionalidades no especificadas.
 
 **Scale/Scope**: Operación de parqueadero con operarios, administradores, clientes, contratos, vehículos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría. No hay volumen de datos especificado.
 
@@ -36,7 +36,7 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 | Simplicidad, estructura plana y estilo funcional | PASS | Solo `/frontend`, `/backend` y `/db`; funciones y módulos por dominio, sin Clean Architecture ni ORM. |
 | Validación, acceso y errores | PASS | Sesión activa, rol Administrador y caja abierta se validan antes de operaciones; mensajes de usuario y estados HTTP semánticos. |
 | Desarrollo guiado por especificación | PASS | Los pasos y tareas implementan requisitos existentes y las aclaraciones registradas en `spec.md`. |
-| Dominio RN-01 a RN-18 | PASS | Unicidad, estados, acceso excepcional, Anti-Passback, inmutabilidad, celdas, caja, comprobantes y anulaciones quedan cubiertos. |
+| Dominio RN-01 a RN-18 | PASS | Unicidad, estados, acceso excepcional, Anti-Passback, inmutabilidad, celdas, ciclo de caja, comprobantes y anulaciones quedan cubiertos. |
 | Stack objetivo | PASS | Angular Standalone, Python/FastAPI y MySQL local. FastAPI fue confirmado por el usuario; versiones no especificadas permanecen sin fijar. |
 
 ## Applied Guidelines
@@ -56,7 +56,7 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 
 #### Step 1.2: Crear persistencia relacional del dominio
 
-- **Requirements**: REQ-004, REQ-005, REQ-006, REQ-011, REQ-014, REQ-015, REQ-019, REQ-023, REQ-025, REQ-027
+- **Requirements**: REQ-004, REQ-005, REQ-006, REQ-011, REQ-014, REQ-015, REQ-019, REQ-023, REQ-025, REQ-027, REQ-028
 - **Design inputs**: Especificación, Key Entities y reglas RN-01 a RN-18.
 - **Description**: Definir el esquema SQL de usuarios/sesiones, clientes, vehículos, contratos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría, con claves, restricciones y campos derivados únicamente de los requisitos. Añadir el acceso MySQL directo en el backend, sin ORM.
 
@@ -74,11 +74,11 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 - **Design inputs**: Especificación, REQ-002; Constitución RN-17.
 - **Description**: Establecer el control común de sesión activa para disponibilidad, entradas, salidas y pagos. Las solicitudes no autenticadas se rechazan con 401.
 
-#### Step 2.3: Abrir caja y proteger transacciones del operario
+#### Step 2.3: Abrir y cerrar caja para proteger transacciones
 
-- **Requirements**: REQ-003, REQ-019
-- **Design inputs**: Especificación, REQ-003; Constitución RN-13.
-- **Description**: Permitir registrar una apertura con base de efectivo y operario responsable; aplicar la condición de caja abierta a nombre del operario antes de aceptar sus transacciones. La apertura debe estar disponible antes de que el operario inicie los flujos de tránsito y recaudo.
+- **Requirements**: REQ-003, REQ-019, REQ-028
+- **Design inputs**: Especificación, REQ-003, REQ-019 y REQ-028; Constitución RN-13.
+- **Description**: Registrar aperturas con base de efectivo y operario responsable; impedir transacciones del operario sin caja abierta; permitir que el titular o un Administrador cierre una caja abierta registrando la hora del servidor, sin monto final. Tras cerrar, el titular podrá abrir otra caja.
 
 #### Step 2.4: Integrar inicio de sesión en la interfaz
 
@@ -98,7 +98,7 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 
 - **Requirements**: REQ-006, REQ-020
 - **Design inputs**: Especificación, REQ-006 y aclaraciones de renovación en `Clarifications`; Constitución RN-02 y RN-12.
-- **Description**: Crear contratos Pendiente de Pago, mantener exclusivamente los cuatro estados documentados, impedir reactivar un contrato Cancelado y calcular la nueva vigencia desde el vencimiento vigente o la fecha de pago según corresponda.
+- **Description**: Crear contratos Pendiente de Pago, mantener exclusivamente los cuatro estados documentados, persistir Vencido al detectar vencimiento, restringir cancelación a Administradores con justificación obligatoria, impedir reactivar un contrato Cancelado y calcular la nueva vigencia desde el vencimiento vigente o la fecha de pago según corresponda.
 
 #### Step 3.3: Autorizar cambios de placa
 
@@ -136,9 +136,9 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 
 #### Step 5.1: Asociar los pagos al turno de caja
 
-- **Requirements**: REQ-003, REQ-027
-- **Design inputs**: Especificación, REQ-003 y REQ-027; Constitución RN-13.
-- **Description**: Asociar cada pago al operario que abrió la caja vigente y hacer cumplir el control de caja ya establecido para todas las transacciones del operario.
+- **Requirements**: REQ-003, REQ-027, REQ-028
+- **Design inputs**: Especificación, REQ-003, REQ-027 y REQ-028; Constitución RN-13.
+- **Description**: Asociar cada pago al operario que abrió la caja vigente y hacer cumplir el control de caja ya establecido para todas las transacciones del operario; los pagos no pueden usar una caja cerrada.
 
 #### Step 5.2: Registrar pagos y renovar contratos
 
@@ -187,7 +187,8 @@ backend/
     └── receipts.py            # Comprobantes fiscales
 
 db/
-└── schema.sql                 # Esquema y restricciones relacionales
+├── schema.sql                 # Esquema y restricciones relacionales
+└── migrations/                # Cambios del esquema para bases existentes
 ```
 
 **Structure Decision**: Se conserva la división plana definida por la constitución. Los módulos y rutas están agrupados por dominio, sin incorporar un cuarto proyecto ni capas de arquitectura no aprobadas.
@@ -196,7 +197,7 @@ db/
 
 - **appType**: SPA Angular con API FastAPI y MySQL local.
 - **Critical user journeys**:
-  1. Iniciar sesión y rechazar operaciones con sesión inactiva.
+  1. Iniciar sesión y rechazar operaciones con sesión inactiva; abrir y cerrar caja y comprobar que el cierre habilita una nueva apertura.
   2. Registrar cliente, vehículo y contrato con validación de documento/placa y cambio de placa reservado al Administrador.
   3. Consultar celdas y registrar entradas/salidas válidas, rechazando incompatibilidad, vigencia incorrecta y Anti-Passback.
   4. Registrar novedad física y acceso excepcional autorizado, dejando los tránsitos inmutables.
@@ -218,7 +219,7 @@ db/
 | REQ-003 | Operario transacciona solo con caja abierta propia | 2.3, 5.1 | `backend/app/cash.py`, `backend/app/routes/cash.py` |
 | REQ-004 | Unicidad de cliente por documento | 1.2, 3.1 | `db/schema.sql`, `backend/app/routes/customers.py` |
 | REQ-005 | Un contrato vincula un vehículo por placa | 1.2, 3.1 | `db/schema.sql`, `backend/app/vehicles.py` |
-| REQ-006 | Estados válidos y estado inicial del contrato | 1.2, 3.2 | `db/schema.sql`, `backend/app/contracts.py` |
+| REQ-006 | Estados válidos, vencimiento automático y cancelación administrativa justificada | 1.2, 3.2 | `db/schema.sql`, `db/migrations/001_contract_status_lifecycle.sql`, `backend/app/contracts.py`, `backend/app/routes/contracts.py`, `frontend/src/app/features/contracts/` |
 | REQ-007 | Cambio de placa autorizado por Administrador | 3.3 | `backend/app/contracts.py`, `backend/app/routes/contracts.py` |
 | REQ-008 | Entrada activa y dentro de vigencia | 4.2 | `backend/app/transits.py` |
 | REQ-009 | Anti-Passback para entradas y salidas | 4.2 | `backend/app/transits.py` |
@@ -240,3 +241,4 @@ db/
 | REQ-025 | Anulación de Administrador con credenciales y justificación auditada | 1.2, 5.4 | `db/schema.sql`, `backend/app/payments.py` |
 | REQ-026 | Validar formatos colombianos de placas | 3.1 | `backend/app/vehicles.py` |
 | REQ-027 | Asociar pago al operario de la caja abierta | 1.2, 5.1 | `db/schema.sql`, `backend/app/payments.py` |
+| REQ-028 | Cerrar caja por titular o Administrador con hora del servidor y sin monto final | 1.2, 2.3, 5.1 | `db/schema.sql`, `backend/app/cash.py`, `backend/app/routes/cash.py`, `frontend/src/app/features/cash/cash-open.component.ts` |

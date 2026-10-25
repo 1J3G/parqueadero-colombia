@@ -1,0 +1,57 @@
+<section class="panel">
+  <p class="eyebrow">Turno operativo</p>
+  <h1>Apertura de caja</h1>
+  @if (cash(); as currentCash) {
+    <p class="success">Caja abierta. Base de efectivo: {{ currentCash.base_amount | currency:'COP':'symbol-narrow' }}</p>
+    @if (!isAdministrator()) {
+      <button class="secondary" type="button" [disabled]="submitting()" (click)="closeCash(currentCash.id)">
+        Cerrar caja
+      </button>
+    }
+  } @else {
+    <p class="muted">Registre la base de efectivo antes de procesar transacciones.</p>
+    <form class="form-grid" (ngSubmit)="openCash()">
+      <label>
+        Base de efectivo (COP)
+        <input
+          name="baseAmount"
+          type="number"
+          min="0"
+          step="0.01"
+          required
+          [ngModel]="baseAmount()"
+          (ngModelChange)="baseAmount.set($event)"
+        />
+      </label>
+      <button class="primary" type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Abriendo…' : 'Abrir caja' }}
+      </button>
+    </form>
+  }
+  @if (isAdministrator()) {
+    <div class="admin-cash-list">
+      <h2>Cajas abiertas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Caja</th><th>Documento titular</th><th>Base</th><th></th></tr></thead>
+          <tbody>
+            @for (opening of activeCash(); track opening.id) {
+              <tr>
+                <td>#{{ opening.id }}</td>
+                <td>{{ opening.user_document }}</td>
+                <td>{{ opening.base_amount | currency:'COP':'symbol-narrow' }}</td>
+                <td>
+                  <button class="secondary" type="button" [disabled]="submitting()" (click)="closeCash(opening.id)">
+                    Cerrar caja
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="muted">No hay cajas abiertas.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

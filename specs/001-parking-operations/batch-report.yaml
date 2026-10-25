@@ -1,0 +1,129 @@
+batch_id: "B02"
+completed_tasks: ["T031", "T032"]
+blocked_tasks: []
+
+files_changed:
+  T031:
+    - file: "specs/001-parking-operations/spec.md"
+      change_type: "modified"
+      description: "Record confirmed expiry and Administrator cancellation policy in REQ-006 and acceptance criteria."
+    - file: ".specify/memory/constitution.md"
+      change_type: "modified"
+      description: "Add contract lifecycle rules to RN-02 and bump constitution to 2.5.0."
+    - file: "specs/001-parking-operations/plan.md"
+      change_type: "modified"
+      description: "Document expiry detection, justified cancellation, and schema migration."
+    - file: "specs/001-parking-operations/tasks.md"
+      change_type: "modified"
+      description: "Complete T031 and retain traceability."
+    - file: "db/schema.sql"
+      change_type: "modified"
+      description: "Persist cancellation actor, justification, and server timestamp."
+    - file: "db/migrations/001_contract_status_lifecycle.sql"
+      change_type: "created"
+      description: "Add lifecycle fields to databases created from the previous schema."
+    - file: "backend/app/contracts.py"
+      change_type: "modified"
+      description: "Persist expired active contracts as Vencido and implement justified cancellation."
+    - file: "backend/app/routes/contracts.py"
+      change_type: "modified"
+      description: "Refresh expiration on contract listing and expose Administrator-only cancellation."
+    - file: "backend/app/routes/transits.py"
+      change_type: "modified"
+      description: "Refresh expired contract states before entry eligibility checks."
+    - file: "backend/app/payments.py"
+      change_type: "modified"
+      description: "Refresh expired contract states before renewal processing."
+    - file: "frontend/src/app/features/contracts/contracts.component.ts"
+      change_type: "modified"
+      description: "Submit cancellation with mandatory justification."
+    - file: "frontend/src/app/features/contracts/contracts.component.html"
+      change_type: "modified"
+      description: "Expose cancellation form only to Administrators."
+    - file: "backend/tests/test_domain.py"
+      change_type: "modified"
+      description: "Test persisted expiry and cancellation service rules."
+    - file: "backend/README.md"
+      change_type: "modified"
+      description: "Document migration and contract-cancellation API."
+    - file: "specs/001-parking-operations/checkpoints/spec-to-plan.yaml"
+      change_type: "modified"
+      description: "Update REQ-006 description."
+    - file: "specs/001-parking-operations/checkpoints/plan-to-tasks.yaml"
+      change_type: "modified"
+      description: "Map T031 to persistence and contract lifecycle plan items."
+    - file: "specs/001-parking-operations/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T031 as completed and update completion counts."
+  T032:
+    - file: "backend/app/payments.py"
+      change_type: "modified"
+      description: "Include customer identity fields already loaded from persisted contract/customer in payment result."
+    - file: "frontend/src/app/features/payments/payments.component.ts"
+      change_type: "modified"
+      description: "Type customer identity fields returned with the payment receipt."
+    - file: "frontend/src/app/features/payments/payments.component.html"
+      change_type: "modified"
+      description: "Show customer's name and identity document in receipt details."
+
+upstream_artifacts_consumed:
+  T031:
+    - artifact: "specs/001-parking-operations/spec.md#REQ-006"
+      used_for: "Four allowed contract states, persisted expiry, and Admin cancellation with justification."
+    - artifact: ".specify/memory/constitution.md#RN-02"
+      used_for: "Governing contract lifecycle policy."
+    - artifact: "specs/001-parking-operations/plan.md#Step-3.2"
+      used_for: "Contract lifecycle implementation scope."
+  T032:
+    - artifact: "specs/001-parking-operations/spec.md#REQ-023"
+      used_for: "Required customer identification in the payment receipt."
+
+evidence_mapping:
+  T031:
+    - upstream: "specs/001-parking-operations/spec.md#REQ-006"
+      output: "backend/app/contracts.py, backend/app/routes/contracts.py, db/schema.sql"
+      evidence: "Unit tests verify expiry update query and cancellation persistence; cancellation endpoint is registered and unauthenticated probe returns 401."
+  T032:
+    - upstream: "specs/001-parking-operations/spec.md#REQ-023"
+      output: "backend/app/payments.py, frontend/src/app/features/payments/"
+      evidence: "Payment response returns customer identity and Angular receipt template renders it."
+
+traceability:
+  - requirement: "REQ-006"
+    plan_item: "1.2,3.2"
+    task: "T031"
+    files: ["db/schema.sql", "db/migrations/001_contract_status_lifecycle.sql", "backend/app/contracts.py", "backend/app/routes/contracts.py", "frontend/src/app/features/contracts/"]
+    status: "completed"
+  - requirement: "REQ-023"
+    plan_item: "5.3"
+    task: "T032"
+    files: ["backend/app/payments.py", "frontend/src/app/features/payments/"]
+    status: "completed"
+
+protocol_violation: false
+errors: []
+warnings:
+  - severity: MEDIUM
+    message: "The migration was not run against the user's local database; apply it once because that database was created with the previous schema."
+  - severity: MEDIUM
+    message: "Authenticated success-path MySQL integration was not run in this implementation batch."
+
+test_results:
+  T031:
+    command: "backend: python -m unittest discover -s tests -v; frontend: npm test; frontend: npm run build; compileall and OpenAPI route assertion"
+    passed: 14
+    failed: 0
+    skipped: 0
+    failures: []
+  T032:
+    command: "frontend: npm test; frontend: npm run build; backend: python -m unittest discover -s tests -v; backend compileall and OpenAPI import"
+    passed: 10
+    failed: 0
+    skipped: 0
+    failures: []
+
+endpoint_probes:
+  - method: "POST"
+    path: "/api/contracts/1/cancel"
+    status: 401
+    result: "PASS: unauthenticated request rejected before database access."

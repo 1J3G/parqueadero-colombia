@@ -1,0 +1,31 @@
+<main class="login-page">
+  <form class="panel login-panel" (ngSubmit)="login()">
+    <p class="eyebrow">Autos Colombia</p>
+    <h1>Iniciar sesión</h1>
+    <p class="muted">Ingrese con su documento de identidad y contraseña.</p>
+    <label>
+      Documento
+      <input
+        name="document"
+        autocomplete="username"
+        required
+        [ngModel]="document()"
+        (ngModelChange)="document.set($event)"
+      />
+    </label>
+    <label>
+      Contraseña
+      <input
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+      />
+    </label>
+    <button class="primary" type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Validando…' : 'Ingresar' }}
+    </button>
+  </form>
+</main>
