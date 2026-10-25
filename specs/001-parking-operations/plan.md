@@ -60,13 +60,6 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 - **Design inputs**: Especificación, Key Entities y reglas RN-01 a RN-18.
 - **Description**: Definir el esquema SQL de usuarios/sesiones, clientes, vehículos, contratos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría, con claves, restricciones y campos derivados únicamente de los requisitos. Añadir el acceso MySQL directo en el backend, sin ORM.
 
-**Tasks**
-
-- [ ] T001 [P] [Plan:1.1] Crear `backend/requirements.txt` con FastAPI, servidor ASGI y conector MySQL directo, usando versiones compatibles con el Python disponible.
-- [ ] T002 [P] [Plan:1.1] Crear el esqueleto Angular Standalone en `frontend/package.json`, `frontend/angular.json`, `frontend/src/main.ts` y `frontend/src/app/app.config.ts`.
-- [ ] T003 [Plan:1.2] Crear `db/schema.sql` con entidades, relaciones, unicidades, estados permitidos y categorías requeridas para los 27 REQ.
-- [ ] T004 [P] [Plan:1.2] Crear `backend/app/database.py` para leer configuración de conexión MySQL desde el entorno y exponer operaciones parametrizadas y transaccionales.
-
 ### Phase 2: User Story 1 — Autenticación y acceso operativo (P1)
 
 #### Step 2.1: Autenticar usuarios por documento y contraseña
@@ -93,15 +86,6 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 - **Design inputs**: Especificación, User Story 1.
 - **Description**: Permitir el inicio de sesión con documento y contraseña, conservar el estado de sesión que exponga el backend y restringir la navegación a las operaciones autenticadas.
 
-**Tasks**
-
-- [ ] T005 [US1] [Plan:2.1] Implementar autenticación por documento, verificación de contraseña y rol en `backend/app/auth.py`.
-- [ ] T006 [US1] [Plan:2.1,2.2] Crear inicio/cierre de sesión y respuesta de identidad en `backend/app/routes/auth.py`.
-- [ ] T007 [US1] [Plan:2.2] Crear dependencia de sesión activa y aplicarla en rutas protegidas de `backend/app/auth.py` y `backend/app/main.py`.
-- [ ] T008 [US1] [Plan:2.4] Crear formulario de autenticación y estado de sesión en `frontend/src/app/features/auth/login.component.ts` y `frontend/src/app/core/auth.service.ts`.
-- [ ] T009 [US1] [Plan:2.4] Crear protección de navegación y retorno de usuario no autenticado al inicio de sesión en `frontend/src/app/core/auth.guard.ts` y `frontend/src/app/app.routes.ts`.
-- [ ] T010 [US1] [Plan:2.3] Implementar la apertura de caja con base de efectivo, la pantalla de apertura y el control de caja activa por operario para rutas transaccionales en `backend/app/cash.py`, `backend/app/routes/cash.py` y `frontend/src/app/features/cash/cash-open.component.ts`.
-
 ### Phase 3: User Story 2 — Clientes, vehículos y contratos (P1)
 
 #### Step 3.1: Registrar clientes y vehículos únicos
@@ -121,14 +105,6 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 - **Requirements**: REQ-007
 - **Design inputs**: Especificación, REQ-007; Constitución RN-18.
 - **Description**: Permitir el cambio de placa únicamente tras comprobar rol Administrador. El resto de roles recibe una denegación explícita.
-
-**Tasks**
-
-- [ ] T011 [US2] [Plan:3.1] Implementar registro y consulta de clientes con unicidad de CC/CE/NIT en `backend/app/routes/customers.py`.
-- [ ] T012 [US2] [Plan:3.1] Implementar validación ABC123/ABC12D y asociación de vehículo único por contrato en `backend/app/vehicles.py` y `backend/app/routes/vehicles.py`.
-- [ ] T013 [US2] [Plan:3.2] Implementar creación y transiciones permitidas de contrato, estado inicial y vigencia por mensualidades en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
-- [ ] T014 [US2] [Plan:3.3] Restringir el cambio de placa al rol Administrador en `backend/app/routes/contracts.py` y `backend/app/contracts.py`.
-- [ ] T015 [US2] [Plan:3.1,3.2,3.3] Crear formularios Angular de clientes, vehículos y contrato, con controles de placa y autorización visible solo para administradores en `frontend/src/app/features/contracts/`.
 
 ### Phase 4: User Story 3 — Celdas, entradas, salidas y novedades (P1)
 
@@ -156,15 +132,6 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 - **Design inputs**: Especificación, REQ-010, REQ-013 y REQ-014; Constitución RN-06 y RN-08.
 - **Description**: Capturar golpes, rayones y fallas con severidad Leve, Moderada o Grave y asociación inmutable a la entrada. Guardar también la novedad requerida para cada acceso excepcional autorizado.
 
-**Tasks**
-
-- [ ] T016 [US3] [Plan:4.1] Implementar consulta de disponibilidad y validación estricta de categoría de celda en `backend/app/cells.py` y `backend/app/routes/cells.py`.
-- [ ] T017 [US3] [Plan:4.2] Implementar reglas de vigencia, estados contractuales, autorización excepcional administrativa y Anti-Passback en `backend/app/transits.py`.
-- [ ] T018 [US3] [Plan:4.3] Registrar entradas inmutables y ocupar celdas disponibles en una transacción MySQL en `backend/app/transits.py` y `backend/app/routes/transits.py`.
-- [ ] T019 [US3] [Plan:4.3] Registrar salidas inmutables y liberar la celda asociada inmediatamente en `backend/app/transits.py` y `backend/app/routes/transits.py`.
-- [ ] T020 [US3] [Plan:4.4] Persistir novedades de acceso excepcional y daños físicos con severidad y vínculo inmutable al tránsito de entrada en `backend/app/novelties.py` y `backend/app/routes/transits.py`.
-- [ ] T021 [US3] [Plan:4.1,4.2,4.4] Crear vistas Angular de disponibilidad, entrada y salida con selección de celda compatible y captura de daños en `frontend/src/app/features/parking/`.
-
 ### Phase 5: User Story 4 — Caja, pagos, comprobantes y anulaciones (P1)
 
 #### Step 5.1: Asociar los pagos al turno de caja
@@ -190,15 +157,6 @@ Implementar el flujo de operaciones definido en los 27 requisitos mediante Angul
 - **Requirements**: REQ-024, REQ-025
 - **Design inputs**: Especificación, REQ-024 y REQ-025; Constitución RN-16.
 - **Description**: Denegar borrado/anulación por operarios. Para Administrador, solicitar credenciales de confirmación y justificación, conservar el pago y registrar la anulación en auditoría.
-
-**Tasks**
-
-- [ ] T022 [US4] [Plan:5.1,5.2] Asociar los pagos a la apertura vigente del operario y exigir caja abierta en `backend/app/payments.py` y `backend/app/routes/payments.py`.
-- [ ] T023 [US4] [Plan:5.2] Implementar métodos de pago, referencia obligatoria para transferencia y actualización de estado/vencimiento contractual en `backend/app/payments.py`.
-- [ ] T024 [US4] [Plan:5.3] Generar comprobante con numeración consecutiva, valor neto, IVA del 19% e identificación del cliente en `backend/app/receipts.py`.
-- [ ] T025 [US4] [Plan:5.4] Implementar anulación administrativa con revalidación de credenciales, justificación obligatoria y bitácora sin eliminar el pago en `backend/app/payments.py` y `backend/app/routes/payments.py`.
-- [ ] T026 [US4] [Plan:5.2,5.3] Crear interfaz Angular para cobro de mensualidad, con método, referencia de transferencia y resumen de comprobante en `frontend/src/app/features/payments/`.
-- [ ] T027 [US4] [Plan:5.4] Crear acción de anulación visible solo a Administrador y formulario de confirmación/justificación en `frontend/src/app/features/payments/`.
 
 ## Project Structure
 
