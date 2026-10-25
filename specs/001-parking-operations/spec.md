@@ -141,6 +141,17 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **REQ-027**: El sistema MUST asociar cada pago recibido al operario que abrió la caja vigente.
 - **REQ-028**: El sistema MUST permitir al titular cerrar su caja abierta y a un Administrador cerrar cualquier caja abierta; registrará la fecha y hora exactas del servidor, dejará la caja no disponible para nuevas transacciones y no solicitará ni registrará un monto final de cierre.
 
+### Non-Functional Requirements
+
+- **RNF-001 — Rendimiento**: El 95 % de las consultas de disponibilidad MUST responder en menos de 2 segundos cuando haya hasta 50 usuarios concurrentes.
+- **RNF-002 — Seguridad de credenciales**: El sistema MUST almacenar las contraseñas usando un algoritmo de hash diseñado para contraseñas y MUST NOT almacenarlas en texto plano.
+- **RNF-003 — Control de acceso**: El sistema MUST validar en el servidor la sesión activa y el rol requerido para cada operación protegida; la autorización MUST NOT depender únicamente de controles de la interfaz de usuario.
+- **RNF-004 — Disponibilidad**: El sistema MUST mantener una disponibilidad mensual mínima del 99,5 % durante el horario de operación, excluyendo mantenimientos programados.
+- **RNF-005 — Recuperación**: El sistema MUST realizar copias de seguridad diarias y permitir restaurar el servicio en un máximo de 4 horas ante una falla.
+- **RNF-006 — Integridad**: Las operaciones de entrada, salida y pago MUST evitar registros parciales o duplicados ante errores o solicitudes concurrentes.
+- **RNF-007 — Auditoría**: Los registros de autorización excepcional, cancelación de contratos y anulación de pagos MUST conservar quién realizó la acción, cuándo y la justificación, y MUST NOT poder modificarse desde la aplicación.
+- **RNF-008 — Usabilidad**: Un operario capacitado MUST poder completar una entrada o salida habitual en un máximo de 3 minutos, sin contar el tiempo de atención al cliente.
+
 ### Key Entities *(include if feature involves data)*
 
 - **Usuario**: Persona operaria o administradora identificada por documento, con credenciales y rol; una sesión activa habilita operaciones específicas.
