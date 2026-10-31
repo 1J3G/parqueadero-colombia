@@ -7,11 +7,11 @@ metadata:
   target_tasks: "specs/001-parking-operations/tasks.md"
 
 summary:
-  total_plan_items: 17
-  covered_plan_items: 17
+  total_plan_items: 24
+  covered_plan_items: 24
   missing_plan_items: 0
   coverage_percentage: 100.0
-  total_tasks_generated: 45
+  total_tasks_generated: 51
   orphan_tasks: 0
 
 plan_items:
@@ -50,7 +50,7 @@ plan_items:
     tasks: ["T020", "T021", "T024", "T043", "T044", "T045"]
   - item_id: "4.3"
     description: "Persistir tránsitos y ocupación de celdas"
-    tasks: ["T021", "T022"]
+    tasks: ["T021", "T022", "T046"]
   - item_id: "4.4"
     description: "Registrar daños y accesos excepcionales"
     tasks: ["T023", "T024"]
@@ -62,10 +62,31 @@ plan_items:
     tasks: ["T026", "T029"]
   - item_id: "5.3"
     description: "Emitir comprobante fiscal"
-    tasks: ["T027", "T029"]
+    tasks: ["T027", "T029", "T032"]
   - item_id: "5.4"
     description: "Anular pagos con autorización y auditoría"
     tasks: ["T028", "T030"]
+  - item_id: "6.1"
+    description: "Consultar ocupación y administrar mantenimiento de celdas"
+    tasks: ["T033", "T034", "T035", "T041", "T042"]
+  - item_id: "6.2"
+    description: "Crear y consultar cuentas de usuario"
+    tasks: ["T036", "T037", "T041", "T042"]
+  - item_id: "6.3"
+    description: "Consultar auditoría de cancelaciones"
+    tasks: ["T038", "T039", "T041", "T042"]
+  - item_id: "6.4"
+    description: "Confirmar operaciones de creación"
+    tasks: ["T040", "T041", "T042"]
+  - item_id: "7.1"
+    description: "Medir rendimiento y concurrencia transaccional"
+    tasks: ["T047", "T048"]
+  - item_id: "7.2"
+    description: "Definir disponibilidad y operaciones de backup"
+    tasks: ["T049", "T050"]
+  - item_id: "7.3"
+    description: "Validar usabilidad operativa"
+    tasks: ["T051"]
 
 missing_plan_items: []
 orphan_tasks: []
@@ -116,9 +137,9 @@ upstream_trace:
     tasks: ["T020", "T021", "T024", "T043", "T044", "T045"]
     full_trace: "REQ-008,REQ-009,REQ-010 -> Step 4.2 -> T020,T021,T024,T043,T044,T045"
   - plan_item: "4.3"
-    source_requirements: ["REQ-011", "REQ-012", "REQ-017", "REQ-018"]
-    tasks: ["T021", "T022"]
-    full_trace: "REQ-011,REQ-012,REQ-017,REQ-018 -> Step 4.3 -> T021,T022"
+    source_requirements: ["REQ-009", "REQ-011", "REQ-012", "REQ-017", "REQ-018", "RNF-006"]
+    tasks: ["T021", "T022", "T046"]
+    full_trace: "REQ-009,REQ-011,REQ-012,REQ-017,REQ-018,RNF-006 -> Step 4.3 -> T021,T022,T046"
   - plan_item: "4.4"
     source_requirements: ["REQ-010", "REQ-013", "REQ-014"]
     tasks: ["T023", "T024"]
@@ -133,9 +154,37 @@ upstream_trace:
     full_trace: "REQ-020,REQ-021,REQ-022 -> Step 5.2 -> T026,T029"
   - plan_item: "5.3"
     source_requirements: ["REQ-023"]
-    tasks: ["T027", "T029"]
-    full_trace: "REQ-023 -> Step 5.3 -> T027,T029"
+    tasks: ["T027", "T029", "T032"]
+    full_trace: "REQ-023 -> Step 5.3 -> T027,T029,T032"
   - plan_item: "5.4"
     source_requirements: ["REQ-024", "REQ-025"]
     tasks: ["T028", "T030"]
     full_trace: "REQ-024,REQ-025 -> Step 5.4 -> T028,T030"
+  - plan_item: "6.1"
+    source_requirements: ["REQ-029"]
+    tasks: ["T033", "T034", "T035", "T041", "T042"]
+    full_trace: "REQ-029 -> Step 6.1 -> T033,T034,T035,T041,T042"
+  - plan_item: "6.2"
+    source_requirements: ["REQ-030", "RNF-002", "RNF-003"]
+    tasks: ["T036", "T037", "T041", "T042"]
+    full_trace: "REQ-030,RNF-002,RNF-003 -> Step 6.2 -> T036,T037,T041,T042"
+  - plan_item: "6.3"
+    source_requirements: ["REQ-031", "RNF-003", "RNF-007"]
+    tasks: ["T038", "T039", "T041", "T042"]
+    full_trace: "REQ-031,RNF-003,RNF-007 -> Step 6.3 -> T038,T039,T041,T042"
+  - plan_item: "6.4"
+    source_requirements: ["REQ-032"]
+    tasks: ["T040", "T041", "T042"]
+    full_trace: "REQ-032 -> Step 6.4 -> T040,T041,T042"
+  - plan_item: "7.1"
+    source_requirements: ["RNF-001", "RNF-006"]
+    tasks: ["T047", "T048"]
+    full_trace: "RNF-001,RNF-006 -> Step 7.1 -> T047,T048"
+  - plan_item: "7.2"
+    source_requirements: ["RNF-004", "RNF-005"]
+    tasks: ["T049", "T050"]
+    full_trace: "RNF-004,RNF-005 -> Step 7.2 -> T049,T050"
+  - plan_item: "7.3"
+    source_requirements: ["RNF-008"]
+    tasks: ["T051"]
+    full_trace: "RNF-008 -> Step 7.3 -> T051"

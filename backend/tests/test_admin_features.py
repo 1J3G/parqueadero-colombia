@@ -9,7 +9,7 @@ from app.auth import get_current_user, require_administrator
 from app.main import app
 from app.routes.cells import CellStatusUpdate, list_cells, update_cell_status
 from app.routes.contracts import list_contract_cancellations, list_contracts
-from app.routes.transits import EntryRequest, register_entry
+from app.routes.transits import EntryRequest, ExitRequest, register_entry, register_exit
 from app.routes.users import UserCreate, create_user
 
 
@@ -186,6 +186,65 @@ class AdministrativeFeaturesTest(unittest.TestCase):
         self.assertTrue(any("WHERE vehicle_id = %s" in query for query in executed_queries))
         self.assertFalse(any("SELECT id, category, status FROM cells" in query for query in executed_queries))
         self.assertFalse(any("INSERT INTO transits" in query for query in executed_queries))
+
+    def test_entry_after_exit_can_assign_a_different_free_cell(self):
+        cursor = Mock()
+        cursor.fetchone.side_effect = [
+            {
+                "contract_id": 5,
+                "status": "Activo",
+                "expires_on": date.today(),
+                "vehicle_id": 10,
+                "vehicle_type": "Carro",
+            },
+            {"id": 10},
+            {"server_date": date.today()},
+            {"direction": "Salida", "cell_id": 3},
+            {"id": 4, "category": "Carro", "status": "Libre"},
+        ]
+        cursor.rowcount = 1
+        cursor.lastrowid = 12
+        transaction = MagicMock()
+        transaction.__enter__.return_value = cursor
+        transaction.__exit__.return_value = False
+
+        with patch("app.routes.transits.transaction", return_value=transaction):
+            result = register_entry(
+                EntryRequest(contract_id=5, cell_id=4),
+                operator={"id": 2, "role": "Administrador"},
+            )
+
+        self.assertEqual(result["direction"], "Entrada")
+        self.assertEqual(result["cell_id"], 4)
+        executed_queries = [call.args[0] for call in cursor.execute.call_args_list]
+        self.assertTrue(any("UPDATE cells SET status = 'Ocupado'" in query for query in executed_queries))
+        self.assertTrue(any("INSERT INTO transits" in query for query in executed_queries))
+
+    def test_exit_locks_vehicle_before_releasing_its_cell(self):
+        cursor = Mock()
+        cursor.fetchone.side_effect = [
+            {"contract_id": 5, "vehicle_id": 10},
+            {"id": 10},
+            {"id": 8, "cell_id": 3, "direction": "Entrada"},
+        ]
+        cursor.rowcount = 1
+        cursor.lastrowid = 13
+        transaction = MagicMock()
+        transaction.__enter__.return_value = cursor
+        transaction.__exit__.return_value = False
+
+        with patch("app.routes.transits.transaction", return_value=transaction):
+            result = register_exit(
+                ExitRequest(contract_id=5),
+                operator={"id": 2, "role": "Administrador"},
+            )
+
+        self.assertEqual(result["direction"], "Salida")
+        executed_queries = [call.args[0] for call in cursor.execute.call_args_list]
+        lock_index = next(index for index, query in enumerate(executed_queries) if "SELECT id FROM vehicles" in query)
+        transit_index = next(index for index, query in enumerate(executed_queries) if "SELECT id, cell_id, direction" in query)
+        self.assertLess(lock_index, transit_index)
+        self.assertTrue(any("UPDATE cells SET status = 'Libre'" in query for query in executed_queries))
 
     def test_administrator_requirement_rejects_operator(self):
         with self.assertRaises(HTTPException) as raised:

@@ -30,7 +30,7 @@
 
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
-- [x] Feature meets measurable outcomes defined in Success Criteria
+- [ ] Feature meets measurable outcomes defined in Success Criteria (falta validación de integración y de RNF operativos)
 - [x] No implementation details leak into specification
 
 ## Notes
@@ -40,3 +40,6 @@
 - El historial de cancelaciones usa los campos de auditoría existentes en contratos, sin crear una segunda bitácora.
 - No se especifican duración ni cálculo del importe de mensualidades; no se añaden reglas para esos valores.
 - REQ-009 cubre tanto la placa/vehículo asociado como la selección en la interfaz y el rechazo de entradas duplicadas en el backend.
+- La relación correcta es un contrato por vehículo referenciado, pero un vehículo puede aparecer en varios contratos; no se afirma que exista exclusividad de contratos vigentes.
+- Este checklist valida la calidad de la especificación, no el cumplimiento operativo. RNF-001, RNF-004, RNF-005, RNF-006 y RNF-008 siguen pendientes de evidencia y tienen tareas abiertas en `tasks.md`.
+- RNF-002 y RNF-003 tienen implementación y pruebas unitarias; RNF-007 tiene controles en el esquema y la aplicación, pero falta integración autenticada con MySQL.

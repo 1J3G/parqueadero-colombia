@@ -57,7 +57,7 @@ Un usuario registra clientes identificados de forma única, vincula cada contrat
 **Acceptance Scenarios**:
 
 1. **Given** un cliente con documento CC, CE o NIT no registrado, **When** se registra, **Then** queda identificado por ese documento y no se permite otro registro con el mismo documento.
-2. **Given** un contrato nuevo, **When** se crea sin un pago registrado, **Then** queda asociado a un único vehículo por su placa y su estado es Pendiente de Pago.
+2. **Given** un contrato nuevo, **When** se crea sin un pago registrado, **Then** queda asociado a exactamente un vehículo por su placa y su estado es Pendiente de Pago; otros contratos pueden referenciar ese mismo vehículo.
 3. **Given** una placa de carro con formato ABC123 o de moto con formato ABC12D, **When** se asocia al contrato, **Then** el sistema la acepta; **Given** una placa que no cumple el formato correspondiente, **When** se intenta asociar, **Then** el sistema la rechaza.
 4. **Given** un contrato existente, **When** un usuario que no es Administrador intenta cambiar su placa, **Then** el sistema deniega el cambio; si la autorización la realiza un Administrador, **Then** el cambio puede ser autorizado.
 5. **Given** un contrato, **When** se consulta o actualiza su estado, **Then** solo puede ser Pendiente de Pago, Activo, Vencido o Cancelado.
@@ -84,6 +84,7 @@ Un operario registra el tránsito de un vehículo, asigna una celda compatible y
 8. **Given** daños preexistentes detectados durante el ingreso, **When** se confirma la entrada, **Then** cada novedad física queda asociada al tránsito de entrada y clasificada como Leve, Moderada o Grave.
 9. **Given** un tránsito registrado, **When** un usuario intenta editarlo o eliminarlo, **Then** el sistema rechaza la operación.
 10. **Given** una placa que ya tiene un vehículo dentro del parqueadero, **When** se consulta el módulo de entradas y salidas desde cualquier contrato asociado a esa placa, **Then** el sistema muestra la celda ocupada, no ofrece otra celda ni permite registrar una nueva entrada; el backend también rechaza solicitudes repetidas.
+11. **Given** un vehículo con tránsito más reciente de Salida, un contrato Activo vigente y otra celda Libre compatible, **When** se registra una nueva entrada, **Then** el sistema permite ocupar la nueva celda y conserva la anterior Libre.
 
 ### User Story 4 - Abrir caja, cobrar mensualidades y anular pagos autorizadamente (Priority: P1)
 
@@ -173,11 +174,11 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - **REQ-002**: El sistema MUST exigir sesión activa para consultar disponibilidad de celdas, registrar entradas o salidas y procesar pagos.
 - **REQ-003**: El sistema MUST impedir que un operario procese transacciones si no tiene una caja abierta a su nombre.
 - **REQ-004**: El sistema MUST identificar de forma única a cada cliente por su documento CC, CE o NIT.
-- **REQ-005**: El sistema MUST vincular cada contrato de mensualidad con un único vehículo por su placa.
+- **REQ-005**: El sistema MUST vincular cada contrato de mensualidad con exactamente un vehículo identificado por su placa. Un vehículo puede estar asociado a varios contratos; no se define exclusividad entre contratos vigentes.
 - **REQ-006**: El sistema MUST aceptar exclusivamente los estados contractuales Pendiente de Pago, Activo, Vencido y Cancelado; asignar Pendiente de Pago por defecto al contrato nuevo sin pago; persistir Vencido cuando detecte que la fecha del servidor supera el vencimiento de un contrato Activo; permitir cancelar contratos únicamente a un Administrador con justificación obligatoria; y exigir un contrato nuevo para sustituir uno Cancelado.
 - **REQ-007**: El sistema MUST permitir únicamente a un usuario con rol Administrador autorizar el cambio de placa de un contrato existente.
 - **REQ-008**: El sistema MUST permitir la entrada automatizada solo si el contrato está Activo y la fecha actual es menor o igual a su fecha de vencimiento.
-- **REQ-009**: El sistema MUST bloquear nuevas entradas para vehículos Dentro del Parqueadero y salidas para vehículos Fuera del Parqueadero. Si la placa ya ocupa una celda, la interfaz MUST mostrar esa celda y MUST NOT ofrecer otra celda ni habilitar una nueva entrada; el backend MUST rechazar la repetición incluso si se envía otra celda o un contrato diferente asociado al mismo vehículo.
+- **REQ-009**: El sistema MUST bloquear nuevas entradas para vehículos Dentro del Parqueadero y salidas para vehículos Fuera del Parqueadero. Si la placa ya ocupa una celda, la interfaz MUST mostrar esa celda y MUST NOT ofrecer otra celda ni habilitar una nueva entrada; el backend MUST rechazar la repetición incluso si se envía otra celda o un contrato diferente asociado al mismo vehículo. Después de una salida confirmada, un contrato Activo y vigente MUST permitir una nueva entrada en una celda Libre compatible.
 - **REQ-010**: El sistema MUST bloquear la entrada de vehículos con contrato Vencido, Pendiente de Pago o Cancelado hasta que un Administrador otorgue autorización explícita y se registre una novedad de acceso excepcional.
 - **REQ-011**: El sistema MUST persistir cada tránsito con fecha y hora exactas del servidor, ID del operario e ID de la celda asignada.
 - **REQ-012**: El sistema MUST impedir la edición y eliminación de registros de tránsito.
@@ -218,7 +219,7 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - **Usuario**: Persona operaria o administradora identificada por documento, con credenciales y rol; una sesión activa habilita operaciones específicas.
 - **Cliente**: Persona identificada de forma única por CC, CE o NIT.
 - **Vehículo**: Vehículo identificado por placa y tipo, asociado de forma exclusiva a un contrato.
-- **Contrato de mensualidad**: Relación entre un cliente y un único vehículo, con estado y fecha de vencimiento.
+- **Contrato de mensualidad**: Relación entre un cliente y exactamente un vehículo, con estado y fecha de vencimiento. El mismo vehículo puede estar referenciado por varios contratos.
 - **Caja**: Apertura realizada por un operario con base de efectivo, asociada a su turno y cerrada por el titular o un Administrador con fecha y hora del servidor.
 - **Tránsito**: Registro inmutable de entrada o salida que identifica fecha y hora del servidor, operario y celda.
 - **Novedad**: Descripción de acceso excepcional o daño preexistente; la novedad física incluye severidad y queda vinculada al tránsito de entrada.
@@ -252,4 +253,5 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - La categoría y severidad de novedades de daños físicos no se aplican automáticamente a las novedades de acceso excepcional, porque son registros con propósitos distintos en los requisitos entregados.
 - El negocio fija la tarifa de la mensualidad fuera del sistema y proporciona su valor neto al registrar el pago; el sistema no mantiene tarifas. Los meses pagados se cuentan desde el vencimiento actual para un contrato vigente y desde la fecha del pago para uno vencido o nuevo.
 - Un contrato Cancelado no se reactiva por pago; se requiere crear un contrato nuevo para volver a contratar la mensualidad.
+- No se define exclusividad entre contratos vigentes asociados al mismo vehículo; todos comparten un único estado físico de ocupación controlado por sus tránsitos.
 - El cierre de caja registra únicamente la fecha y hora del servidor; no realiza arqueo ni exige monto final. El titular puede cerrar su caja y un Administrador puede cerrar cualquier caja abierta.

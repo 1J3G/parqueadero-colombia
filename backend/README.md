@@ -26,10 +26,12 @@ Create a MySQL application account with access to `autos_colombia`, copy `.env.e
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python -m app.seed
 uvicorn app.main:app --reload
 ```
+
+`requirements.txt` contains runtime dependencies; `requirements-dev.txt` includes the additional test client needed for the backend suite.
 
 The seed command creates the initial Administrator and Operario interactively. It hashes passwords and does not overwrite existing accounts. After the first setup, Administrators can create accounts from the application.
 
@@ -49,4 +51,8 @@ Add the parkadero's real cells to the `cells` table. The application does not in
 - Payments: `POST /api/payments`, `POST /api/payments/{id}/void` (Administrator)
 - Receipts: `GET /api/receipts/{payment_id}`
 
-The contract listing includes each vehicle's current inside/outside state and occupied cell. Entry registration applies Anti-Passback by vehicle (and therefore by its unique plate): it locks the vehicle row and rejects a second entry until an exit is recorded, including when a different contract references that vehicle.
+The contract listing includes each vehicle's current inside/outside state and occupied cell. A vehicle can be referenced by multiple contracts, but all share one occupancy state. Entry and exit lock that vehicle row and apply Anti-Passback across its contracts. After a successful exit, an Active, unexpired contract can register a new entry in another compatible free cell. These transitions need no migration.
+
+## Verification
+
+From `backend`, run `python -m unittest discover -s tests -v` and `python -m compileall -q app tests`. These checks use mocks/unit tests; they do not replace authenticated integration testing against MySQL or the non-functional validation listed in the project plan.

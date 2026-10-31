@@ -13,6 +13,9 @@ Sync Impact Report
 - Version change: 2.6.0 → 2.6.1
 - Modified rules: RN-05 explicitly prevents a vehicle/plate already inside
   from being assigned another cell or entering again.
+- Version change: 2.6.1 → 2.6.2
+- Modified rules: RN-04 clarifies that each contract references one vehicle,
+  while the schema may retain multiple contracts for that vehicle.
 - Templates: No changes required.
 - Follow-up TODOs: Ninguno.
 -->
@@ -79,7 +82,7 @@ de negocio implícitas o cambios de alcance no aprobados.
 | Componente | Tecnología | Versión / notas |
 |-----------|------------|-----------------|
 | Frontend | Angular Standalone | Versión no especificada |
-| Backend | Python | Framework y versión no especificados |
+| Backend | Python / FastAPI | Versión no especificada |
 | Base de datos | MySQL local | Versión no especificada |
 | Control de versiones | Git / GitHub | — |
 
@@ -104,10 +107,14 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 - **RN-03 (Vigencia contractual)**: El ingreso automatizado solo se permite si
   el contrato asociado está Activo y la fecha actual es menor o igual a su
   fecha de finalización.
-- **RN-04 (Vehículo asociado a mensualidad)**: Un contrato estándar da derecho
-  de parqueo a un solo vehículo específico (relación 1:1 contrato-placa). No se
-  permite el ingreso de un vehículo sustituto bajo el mismo contrato sin una
-  modificación contractual previa del administrador.
+- **RN-04 (Vehículo asociado a mensualidad)**: Cada contrato estándar da
+  derecho de parqueo a un solo vehículo, identificado por una placa única. La
+  asociación no implica que el vehículo solo pueda tener un contrato
+  registrado: la base admite varios contratos para el mismo vehículo y todos
+  comparten su estado de ocupación. No se permite el ingreso de un vehículo
+  sustituto bajo el mismo contrato sin una modificación contractual previa de
+  un Administrador. No se define una restricción de exclusividad entre
+  contratos vigentes del mismo vehículo.
 
 ### Módulo 2: Entrada, Salida y Novedades de Vehículos
 
@@ -214,4 +221,4 @@ Cada revisión de especificación, plan o implementación debe comprobar su
 conformidad con las reglas RN-01 a RN-20, el stack, las restricciones de
 estructura y el proceso de desarrollo guiado por especificación.
 
-**Versión**: 2.6.1 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-31
+**Versión**: 2.6.2 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-31

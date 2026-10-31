@@ -14,7 +14,7 @@ Aplicación web para la operación de un parqueadero: usuarios, clientes, contra
 2. En otra terminal, inicia el frontend siguiendo [frontend/README.md](./frontend/README.md). La aplicación estará en `http://localhost:4200`.
 3. Registra las celdas reales del parqueadero en la tabla `cells`; no se generan celdas por defecto.
 
-En **Entradas y salidas**, una placa que ya esté dentro muestra su celda ocupada y no permite asignar otra ni registrar un segundo ingreso hasta completar la salida.
+En **Entradas y salidas**, una placa que ya esté dentro muestra su celda ocupada y no permite asignar otra ni registrar un segundo ingreso. Después de confirmar su salida, el contrato Activo y vigente puede reingresar en otra celda compatible que esté Libre.
 
 ## Documentación
 

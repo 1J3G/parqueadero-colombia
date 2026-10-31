@@ -7,8 +7,8 @@ metadata:
   target_plan: "specs/001-parking-operations/plan.md"
 
 summary:
-  total_requirements: 28
-  covered_requirements: 28
+  total_requirements: 40
+  covered_requirements: 40
   missing_requirements: 0
   coverage_percentage: 100.0
 
@@ -114,8 +114,12 @@ requirements:
       phase: "Phase-4"
       phase_name: "Celdas, entradas, salidas y novedades"
       items:
+        - item_id: "4.1"
+          description: "Consultar disponibilidad, estado del vehículo y compatibilidad"
         - item_id: "4.2"
           description: "Aplicar reglas de ingreso, excepción y Anti-Passback"
+        - item_id: "4.3"
+          description: "Persistir tránsitos y ocupación de celdas"
     notes: ""
   - req_id: "REQ-010"
     req_description: "Acceso excepcional a contratos no vigentes/cancelados"
@@ -332,6 +336,141 @@ requirements:
           description: "Asociar los pagos al turno de caja"
     notes: ""
 
+  - req_id: "REQ-029"
+    req_description: "Consultar estados de celdas y administrar mantenimiento"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-6"
+      phase_name: "Celdas, cuentas, auditoría y confirmaciones"
+      items:
+        - item_id: "6.1"
+          description: "Consultar ocupación y administrar mantenimiento de celdas"
+    notes: ""
+  - req_id: "REQ-030"
+    req_description: "Crear y consultar usuarios solo como Administrador"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-6"
+      phase_name: "Celdas, cuentas, auditoría y confirmaciones"
+      items:
+        - item_id: "6.2"
+          description: "Crear y consultar cuentas de usuario"
+    notes: ""
+  - req_id: "REQ-031"
+    req_description: "Consultar auditoría de cancelaciones solo como Administrador"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-6"
+      phase_name: "Celdas, cuentas, auditoría y confirmaciones"
+      items:
+        - item_id: "6.3"
+          description: "Consultar auditoría de cancelaciones"
+    notes: ""
+  - req_id: "REQ-032"
+    req_description: "Confirmar visualmente las creaciones exitosas"
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-6"
+      phase_name: "Celdas, cuentas, auditoría y confirmaciones"
+      items:
+        - item_id: "6.4"
+          description: "Confirmar operaciones de creación"
+    notes: ""
+  - req_id: "RNF-001"
+    req_description: "P95 de consultas de disponibilidad menor a 2 segundos con 50 usuarios concurrentes"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-7"
+      phase_name: "Validación no funcional y preparación operativa"
+      items:
+        - item_id: "7.1"
+          description: "Medir rendimiento y concurrencia transaccional"
+    notes: "Pendiente de medición."
+  - req_id: "RNF-002"
+    req_description: "Almacenar contraseñas mediante hash seguro no reversible"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2, Phase-6"
+      phase_name: "Autenticación y acceso operativo; administración de usuarios"
+      items:
+        - item_id: "2.1"
+          description: "Autenticar usuarios por documento y contraseña"
+        - item_id: "6.2"
+          description: "Crear y consultar cuentas de usuario"
+    notes: "Implementado; pruebas unitarias."
+  - req_id: "RNF-003"
+    req_description: "Validar sesión y rol requerido en el servidor"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2, Phase-6"
+      phase_name: "Autenticación y autorización administrativa"
+      items:
+        - item_id: "2.2"
+          description: "Exigir sesión activa en operaciones protegidas"
+        - item_id: "6.2"
+          description: "Crear y consultar cuentas de usuario"
+        - item_id: "6.3"
+          description: "Consultar auditoría de cancelaciones"
+    notes: "Implementado; integración MySQL pendiente."
+  - req_id: "RNF-004"
+    req_description: "Disponibilidad mensual mínima del 99,5%"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-7"
+      phase_name: "Validación no funcional y preparación operativa"
+      items:
+        - item_id: "7.2"
+          description: "Definir disponibilidad y operaciones de backup"
+    notes: "Pendiente de definir entorno, monitorización y medir."
+  - req_id: "RNF-005"
+    req_description: "Backup diario y restauración en máximo 4 horas"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-7"
+      phase_name: "Validación no funcional y preparación operativa"
+      items:
+        - item_id: "7.2"
+          description: "Definir disponibilidad y operaciones de backup"
+    notes: "Pendiente de implementar y ensayar backup/restore."
+  - req_id: "RNF-006"
+    req_description: "Atomicidad y prevención de duplicados ante errores o concurrencia"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4, Phase-5, Phase-7"
+      phase_name: "Tránsitos, pagos y validación no funcional"
+      items:
+        - item_id: "4.3"
+          description: "Persistir tránsitos y ocupación de celdas"
+        - item_id: "5.1"
+          description: "Asociar los pagos al turno de caja"
+        - item_id: "7.1"
+          description: "Medir rendimiento y concurrencia transaccional"
+    notes: "Transacciones de dominio implementadas; idempotencia de pagos e integración concurrente pendientes."
+  - req_id: "RNF-007"
+    req_description: "Auditar e impedir modificación de eventos sensibles desde la aplicación"
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3, Phase-4, Phase-5"
+      phase_name: "Contratos, tránsitos y pagos"
+      items:
+        - item_id: "3.2"
+          description: "Gestionar contratos y su ciclo de vida"
+        - item_id: "4.4"
+          description: "Registrar daños y accesos excepcionales"
+        - item_id: "5.4"
+          description: "Anular pagos con autorización y auditoría"
+    notes: "Controles de aplicación/esquema implementados; integración MySQL autenticada pendiente."
+  - req_id: "RNF-008"
+    req_description: "Completar movimiento habitual en máximo 3 minutos"
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-7"
+      phase_name: "Validación no funcional y preparación operativa"
+      items:
+        - item_id: "7.3"
+          description: "Validar usabilidad operativa"
+    notes: "Pendiente de medición con usuario capacitado."
+
 missing_requirements: []
 orphan_plan_items: []
 
@@ -339,4 +478,4 @@ validation:
   passed: true
   errors: []
   warnings:
-    - "No hay código existente ni archivos de topología; los paths de evidencia son los previstos por la estructura constitucional."
+    - "La trazabilidad está completa; la validación de requisitos no funcionales depende de evidencia de pruebas y del entorno de despliegue."

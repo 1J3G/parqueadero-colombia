@@ -191,3 +191,14 @@
 - [x] T043 [Plan:4.1,4.2] Devolver el estado dentro/fuera y celda ocupada al listar contratos; bloquear la fila del vehículo antes de validar Anti-Passback y rechazar entradas repetidas en `backend/app/routes/contracts.py` y `backend/app/routes/transits.py`.
 - [x] T044 [Plan:4.1,4.2] Ocultar selección de celda y envío de entrada para placas ocupadas, mostrar su celda y actualizar el estado tras entrada/salida en `frontend/src/app/features/parking/`.
 - [x] T045 [Plan:4.1,4.2] Agregar pruebas backend y frontend de selección ocupada y rechazo de entradas duplicadas; sincronizar especificación, constitución, plan, tareas, guías y diagramas con REQ-009.
+- [x] T046 [Plan:4.3] Serializar también las salidas por vehículo, consumir explícitamente la fila bloqueada y probar reingreso con otro espacio libre después de una salida en `backend/app/routes/transits.py`, `backend/tests/test_admin_features.py` y `frontend/src/app/features/parking/parking.component.spec.ts`.
+
+## Phase 11: Validación no funcional y preparación operativa
+
+**Purpose**: Mantener visibles los requisitos no funcionales aún no validados; no declarar el proyecto listo para producción hasta contar con evidencia del entorno real.
+
+- [ ] T047 [Plan:7.1] Medir RNF-001 con una instancia MySQL aislada: ejecutar consultas de disponibilidad con 50 usuarios concurrentes y documentar el percentil 95 (< 2 s), afinando consultas/índices si no cumple.
+- [ ] T048 [Plan:7.1] Validar RNF-006 mediante pruebas concurrentes MySQL para entradas, salidas y pagos; acordar e implementar una política de idempotencia para reintentos de pago antes de afirmar que no hay duplicados.
+- [ ] T049 [Plan:7.2] Definir el entorno de despliegue y monitorización, y reunir evidencia de disponibilidad mensual mínima del 99,5 % (RNF-004).
+- [ ] T050 [Plan:7.2] Automatizar copias de seguridad diarias y ensayar restauración en el entorno acordado, demostrando recuperación en un máximo de 4 horas (RNF-005).
+- [ ] T051 [Plan:7.3] Ejecutar una prueba cronometrada con un operario capacitado para comprobar que una entrada/salida habitual toma como máximo 3 minutos y documentar el resultado (RNF-008).

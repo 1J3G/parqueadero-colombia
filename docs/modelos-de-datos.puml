@@ -18,7 +18,7 @@ entity "Auditoria de pago" as Auditoria
 
 Usuario "1" -- "0..*" Sesion : inicia
 Cliente "1" -- "0..*" Contrato : suscribe
-Vehiculo "1" -- "0..1" Contrato : se asocia
+Vehiculo "1" -- "0..*" Contrato : se asocia
 Usuario "0..1" -- "0..*" Contrato : cancela
 Usuario "1" -- "0..*" Caja : abre
 Vehiculo "1" -- "0..*" Transito : registra
@@ -35,8 +35,8 @@ Pago "1" -- "0..*" Auditoria : registra anulacion
 Usuario "1" -- "0..*" Auditoria : autoriza
 
 note right of Vehiculo
-  Este MER refleja la especificacion:
-  varios contratos pueden referenciar
+  Cada contrato referencia un vehiculo.
+  Varios contratos pueden referenciar
   el mismo vehiculo y comparten su
   estado de ocupacion actual.
 end note

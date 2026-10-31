@@ -23,7 +23,7 @@ Este documento presenta el modelo entidad-relación (MER), el modelo relacional 
 
 - Un usuario puede tener ninguna o muchas sesiones; cada sesión pertenece a un usuario.
 - Un cliente puede tener ninguno o muchos contratos; cada contrato pertenece a un cliente.
-- Cada contrato corresponde a un vehículo y cada vehículo se asocia como máximo a un contrato según la especificación; véase la diferencia con el esquema físico en la sección 3.
+- Cada contrato corresponde a exactamente un vehículo; un vehículo puede estar asociado a cero o muchos contratos. No se define exclusividad entre contratos vigentes del mismo vehículo.
 - Un usuario puede abrir ninguna o muchas cajas; cada caja tiene un usuario titular.
 - Un vehículo, contrato, celda y usuario pueden aparecer en ninguno o muchos tránsitos; cada tránsito referencia exactamente uno de cada uno.
 - Un tránsito puede tener ninguna o muchas novedades; cada novedad pertenece a un tránsito y la registra un usuario.
@@ -245,7 +245,7 @@ El modelo físico vigente es el DDL de [`db/schema.sql`](../db/schema.sql). Se i
 
 ### Diferencias entre el modelo documentado y el esquema actual
 
-Cada contrato se vincula a un vehículo identificado por una placa única, pero la especificación no exige que el vehículo tenga un único contrato. `contracts.vehicle_id` tiene una clave foránea no única: el DDL permite varios contratos para el mismo vehículo. La relación efectiva es un vehículo con cero o muchos contratos y todos comparten su último tránsito para aplicar Anti-Passback.
+Cada contrato se vincula a exactamente un vehículo identificado por una placa única. `contracts.vehicle_id` tiene una clave foránea no única: tanto la especificación como el DDL permiten varios contratos para el mismo vehículo; no se define exclusividad entre contratos vigentes. Todos los contratos de ese vehículo comparten el último tránsito para aplicar Anti-Passback. La entrada y la salida bloquean la fila del vehículo para serializar los cambios de ocupación.
 
 `receipts` conserva una instantánea de los datos del cliente y no tiene una clave foránea a `customers`. `receipt_counters` es una tabla técnica para asignar consecutivos y no tiene relación declarada por clave foránea con `receipts`.
 

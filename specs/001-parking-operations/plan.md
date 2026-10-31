@@ -1,12 +1,12 @@
 # Implementation Plan: Gestión de operaciones del parqueadero
 
-**Branch**: `new-funct` | **Date**: 2026-10-30 | **Spec**: [spec.md](./spec.md)
+**Branch**: `new-funct` | **Date**: 2026-10-31 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification for Sistema de Parqueadero "Autos Colombia".
 
 ## Summary
 
-Implementar el flujo de operaciones definido en los 32 requisitos mediante Angular Standalone, una API Python con FastAPI y MySQL local. La estructura se limita a `/frontend`, `/backend` y `/db`; la persistencia relacional y las transacciones de ingreso, salida, caja y pago mantienen las reglas de integridad del dominio. Se agregan consulta y mantenimiento de celdas, administración de usuarios, auditoría de cancelaciones y confirmaciones de creación. El cierre de caja registra hora de servidor sin arqueo. La tarifa neta se recibe al registrar el pago y no se administra un catálogo de tarifas.
+Implementar los 32 requisitos funcionales definidos mediante Angular Standalone, una API Python con FastAPI y MySQL local. La estructura de la aplicación se limita a `/frontend`, `/backend` y `/db`; las transacciones de ingreso, salida, caja y pago mantienen las reglas de integridad del dominio. Se agregan consulta/mantenimiento de celdas, administración de usuarios, auditoría de cancelaciones y confirmaciones. El cierre de caja registra hora de servidor sin arqueo; la tarifa neta se recibe al registrar el pago. La especificación también declara ocho requisitos no funcionales: varios dependen de infraestructura y validación de operación que aún no están disponibles en el repositorio y quedan explícitamente pendientes.
 
 ## Technical Context
 
@@ -16,17 +16,17 @@ Implementar el flujo de operaciones definido en los 32 requisitos mediante Angul
 
 **Storage**: MySQL local; esquema relacional y scripts SQL bajo `/db`.
 
-**Testing**: Pruebas unitarias backend y frontend, compilación Angular y validación de aceptación de API, interfaz y persistencia con datos de prueba aislados. Los flujos que requieren MySQL se validan con una instancia local configurada.
+**Testing**: Pruebas unitarias backend y frontend, compilación Angular y validación de aceptación de API, interfaz y persistencia con datos de prueba aislados. Las pruebas MySQL reales, carga, concurrencia de persistencia, recuperación, disponibilidad y usabilidad requieren entornos/evidencia adicionales y no se consideran aprobadas por pasar las pruebas unitarias.
 
 **Target Platform**: Aplicación web SPA en navegador y backend Python conectado a la instancia MySQL local.
 
 **Project Type**: Aplicación web Angular + API FastAPI.
 
-**Performance Goals**: La especificación no fija latencias, concurrencia ni disponibilidad; no se inventan objetivos numéricos.
+**Performance Goals**: RNF-001 exige que el percentil 95 de consultas de disponibilidad sea menor de 2 segundos con hasta 50 usuarios concurrentes. No hay resultados de carga medidos; el objetivo permanece pendiente de validación.
 
 **Constraints**: Reglas RN-01 a RN-20 y REQ-001 a REQ-032; estructura plana `/frontend`, `/backend`, `/db`; consultas MySQL parametrizadas; no incorporar funcionalidades no especificadas.
 
-**Scale/Scope**: Operación de parqueadero con operarios, administradores, clientes, contratos, vehículos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría. No hay volumen de datos especificado.
+**Scale/Scope**: Operación de parqueadero con operarios, administradores, clientes, contratos, vehículos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría. El único perfil de concurrencia especificado es hasta 50 usuarios para la prueba de disponibilidad; el volumen persistido no está definido.
 
 **Access control**: Las nuevas rutas de administración de usuarios, mantenimiento de celdas y consulta de cancelaciones requieren autorización de Administrador en el servidor, además de la protección de navegación en Angular.
 
@@ -40,6 +40,7 @@ Implementar el flujo de operaciones definido en los 32 requisitos mediante Angul
 | Desarrollo guiado por especificación | PASS | Los pasos y tareas implementan requisitos existentes y las aclaraciones registradas en `spec.md`. |
 | Dominio RN-01 a RN-20 | PASS | Unicidad, estados, acceso excepcional, Anti-Passback, inmutabilidad, celdas, ciclo de caja, comprobantes, anulaciones y permisos administrativos quedan cubiertos. |
 | Stack objetivo | PASS | Angular Standalone, Python/FastAPI y MySQL local. FastAPI fue confirmado por el usuario; versiones no especificadas permanecen sin fijar. |
+| RNF-001, RNF-004, RNF-005, RNF-006 y RNF-008 | PENDING | No hay pruebas de carga/concurrencia, infraestructura de disponibilidad, procedimiento de backup/restauración ni medición de usabilidad. RNF-006 tampoco tiene garantía de idempotencia para reintentos de pago; se conserva como brecha, no como logro. |
 
 ## Applied Guidelines
 
@@ -90,11 +91,12 @@ Implementar el flujo de operaciones definido en los 32 requisitos mediante Angul
 
 ### Phase 3: User Story 2 — Clientes, vehículos y contratos (P1)
 
-#### Step 3.1: Registrar clientes y vehículos únicos
+#### Step 3.1: Registrar clientes, vehículos y contratos
 
 - **Requirements**: REQ-004, REQ-005, REQ-026
 - **Design inputs**: Especificación, User Story 2 y REQ-004, REQ-005, REQ-026; Constitución RN-01.
-- **Description**: Aceptar documentos CC, CE o NIT sin duplicados y validar la placa según el formato colombiano indicado para carro o moto. Asociar un único vehículo a cada contrato.
+- **Description**: Aceptar documentos CC, CE o NIT sin duplicados y validar la placa según el formato colombiano indicado para carro o moto. Cada contrato referencia exactamente un vehículo; un vehículo puede estar asociado a varios contratos.
+- **Data cardinality**: Un contrato referencia exactamente un vehículo; un vehículo puede estar asociado a varios contratos. No existe una regla que impida contratos vigentes concurrentes para el mismo vehículo.
 
 #### Step 3.2: Gestionar contratos y su ciclo de vida
 
@@ -124,9 +126,10 @@ Implementar el flujo de operaciones definido en los 32 requisitos mediante Angul
 
 #### Step 4.3: Persistir tránsitos y ocupación de celdas
 
-- **Requirements**: REQ-011, REQ-012, REQ-017, REQ-018
+- **Requirements**: REQ-009, REQ-011, REQ-012, REQ-017, REQ-018, RNF-006
 - **Design inputs**: Especificación, REQ-011, REQ-012, REQ-017 y REQ-018; Constitución RN-07, RN-10 y RN-11.
 - **Description**: Confirmar entrada, asignar celda y registrar tránsito de manera atómica, cambiando la celda de Libre a Ocupado. Registrar salida inmutable y liberar de inmediato la celda como Libre. Ninguna operación de edición o eliminación debe estar expuesta.
+- **Concurrency**: Entrada y salida bloquean la fila del vehículo y consumen sus resultados de bloqueo antes de consultas posteriores; esto serializa las transiciones por placa y evita errores de resultado pendiente del conector.
 
 #### Step 4.4: Registrar daños y accesos excepcionales
 
@@ -238,13 +241,15 @@ db/
   8. Consultar cancelaciones como Administrador y comprobar la denegación para Operario.
   9. Verificar mensajes de éxito para creaciones y ausencia del mensaje ante errores.
   10. Mantener un vehículo dentro, seleccionar su contrato (o un contrato asociado a la misma placa) y comprobar que la UI no ofrece otra celda y que la API rechaza una entrada repetida.
+  11. Registrar la salida, confirmar que la celda anterior queda Libre y reingresar con el contrato Activo vigente en otra celda compatible.
 - **primaryValidationStack**: Validación de rutas y flujos de Angular/FastAPI contra MySQL local.
 - **fallbackMatrix**: `infra-tier`: MySQL local requerido; si no está disponible, las pruebas de persistencia no pueden considerarse aprobadas. `browser-tier`: navegador manual para aceptación visual; no se agrega automatización de navegador en este plan.
 - **Environment requirements**: Python compatible con FastAPI, Node.js compatible con Angular y MySQL local.
-- **knownGaps**: No se definieron objetivos de carga/disponibilidad ni volumen; la validación no cubrirá esos ejes. La aceptación visual final es manual.
+- **knownGaps**: Los objetivos están definidos, pero la infraestructura y la evidencia de carga/disponibilidad no están disponibles en esta validación. La aceptación visual final es manual.
 - **Test data strategy**: Usar registros de prueba separados por ejecución y documentos/placas no compartidos; limpiar solo datos de prueba, nunca registros de auditoría de producción.
 - **Acceptance criteria**: Cada viaje crítico satisface sus escenarios Given-When-Then en la especificación; las operaciones inválidas son rechazadas y no dejan cambios parciales.
 - **Validation review expectations**: Confirmar la correspondencia de cada requisito con implementación observable y verificar las restricciones de inmutabilidad, atomicidad, permisos y trazabilidad.
+- **Current validation evidence (2026-10-31)**: 23 pruebas backend, 5 pruebas frontend, `compileall`, build Angular, validación YAML y `git diff --check` pasan. No se ejecutaron pruebas concurrentes ni integración autenticada con MySQL; no hay evidencia para RNF-001, RNF-004, RNF-005 ni RNF-008. RNF-006 requiere además decisión/implementación de idempotencia de pagos.
 
 ## Requirement Mapping
 
@@ -258,7 +263,7 @@ db/
 | REQ-006 | Estados válidos, vencimiento automático y cancelación administrativa justificada | 1.2, 3.2 | `db/schema.sql`, `db/migrations/001_contract_status_lifecycle.sql`, `backend/app/contracts.py`, `backend/app/routes/contracts.py`, `frontend/src/app/features/contracts/` |
 | REQ-007 | Cambio de placa autorizado por Administrador | 3.3 | `backend/app/contracts.py`, `backend/app/routes/contracts.py` |
 | REQ-008 | Entrada activa y dentro de vigencia | 4.2 | `backend/app/domain.py`, `backend/app/routes/transits.py` |
-| REQ-009 | Anti-Passback para la misma placa, con celda ocupada visible y sin segunda asignación | 4.1, 4.2 | `backend/app/routes/contracts.py`, `backend/app/routes/transits.py`, `frontend/src/app/features/parking/` |
+| REQ-009 | Anti-Passback por placa; bloquear mientras está dentro y permitir reingreso después de salida | 4.1, 4.2, 4.3 | `backend/app/routes/contracts.py`, `backend/app/routes/transits.py`, `frontend/src/app/features/parking/` |
 | REQ-010 | Acceso excepcional a contratos no vigentes/cancelados | 4.2, 4.4 | `backend/app/domain.py`, `backend/app/routes/transits.py`, `backend/app/novelties.py` |
 | REQ-011 | Tránsito con hora servidor, operario y celda | 1.2, 4.3 | `db/schema.sql`, `backend/app/routes/transits.py` |
 | REQ-012 | Prohibir edición y eliminación de tránsitos | 4.3 | `backend/app/routes/transits.py` |
@@ -282,3 +287,33 @@ db/
 | REQ-030 | Crear y consultar usuarios solo como Administrador, sin exponer hashes | 6.2 | `backend/app/routes/users.py`, `backend/app/auth.py`, `frontend/src/app/features/users/` |
 | REQ-031 | Consultar la auditoría de cancelaciones solo como Administrador | 6.3 | `backend/app/routes/contracts.py`, `frontend/src/app/features/contracts/contract-audit.component.*` |
 | REQ-032 | Confirmar visualmente creaciones exitosas | 6.4 | `frontend/src/app/core/api-success.service.ts`, `frontend/src/app/core/api-error.interceptor.ts`, `frontend/src/app/app.html` |
+
+### Non-Functional Requirement Mapping and Status
+
+| Requirement | Plan items | Evidence/status |
+|---|---|---|
+| RNF-001 — P95 < 2 s at up to 50 concurrent users | 7.1 | Pending measured load test; no performance result is claimed. |
+| RNF-002 — Password hashing | 2.1, 6.2 | Implemented with the existing password-hashing helper; covered by backend tests. |
+| RNF-003 — Server-side authorization | 2.2, 6.2, 6.3 | Implemented with authenticated dependencies and Administrator checks on API routes. |
+| RNF-004 — Monthly availability >= 99.5% | 7.2 | Pending deployment/monitoring target and operational evidence. |
+| RNF-005 — Daily backups and restore <= 4 hours | 7.2 | Pending backup/restore procedure and rehearsal; no backup job is included. |
+| RNF-006 — Atomicity and duplicate prevention | 4.3, 5.1, 7.1 | Transactions and vehicle locks cover transit transitions; MySQL concurrency verification and payment idempotency remain pending. |
+| RNF-007 — Auditable, immutable sensitive events | 4.4, 3.2, 5.4 | Transit/novelty triggers and application audit records exist; authenticated MySQL integration is not yet verified. |
+| RNF-008 — Routine movement in <= 3 minutes | 7.3 | Pending timed usability acceptance with an operator. |
+
+### Phase 7: Non-functional Validation and Operational Readiness
+
+#### Step 7.1: Measure performance and transactional concurrency
+
+- **Requirements**: RNF-001, RNF-006
+- **Description**: Use an isolated MySQL environment to measure availability-query P95 with 50 concurrent users and exercise concurrent entry/exit/payment requests. Add payment idempotency only after the request identity/retry policy is defined.
+
+#### Step 7.2: Define availability and backup operations
+
+- **Requirements**: RNF-004, RNF-005
+- **Description**: Select the deployment/monitoring environment, define availability measurement and scheduled backup, then rehearse restoration within four hours. Infrastructure choices and evidence are not present in the repository.
+
+#### Step 7.3: Validate operational usability
+
+- **Requirements**: RNF-008
+- **Description**: Run a timed acceptance with a trained operator for routine entry and exit, document results and address any measured failure.

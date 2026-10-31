@@ -78,11 +78,9 @@ def register_entry(payload: EntryRequest, operator: dict = Depends(get_current_u
         if contract is None:
             raise HTTPException(status_code=404, detail="No se encontró el contrato.")
 
-        cursor.execute(
-            "SELECT id FROM vehicles WHERE id = %s FOR UPDATE",
-            (contract["vehicle_id"],),
-        )
-        cursor.fetchone()
+        cursor.execute("SELECT id FROM vehicles WHERE id = %s FOR UPDATE", (contract["vehicle_id"],))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="No se encontró el vehículo.")
         cursor.execute("SELECT CURRENT_DATE() AS server_date")
         server_date: date = cursor.fetchone()["server_date"]
         exceptional = payload.exceptional_authorization is not None
@@ -186,6 +184,10 @@ def register_exit(payload: ExitRequest, operator: dict = Depends(get_current_use
         contract = cursor.fetchone()
         if contract is None:
             raise HTTPException(status_code=404, detail="No se encontró el contrato.")
+
+        cursor.execute("SELECT id FROM vehicles WHERE id = %s FOR UPDATE", (contract["vehicle_id"],))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="No se encontró el vehículo.")
 
         cursor.execute(
             """

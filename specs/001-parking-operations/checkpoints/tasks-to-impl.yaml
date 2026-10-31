@@ -1,14 +1,14 @@
 metadata:
-  generated: "2026-10-25"
+  generated: "2026-10-31"
   source_tasks: "specs/001-parking-operations/tasks.md"
-  last_updated: "2026-10-25"
+  last_updated: "2026-10-31"
 
 summary:
-  total_tasks: 32
-  completed_tasks: 32
+  total_tasks: 51
+  completed_tasks: 46
   in_progress_tasks: 0
-  pending_tasks: 0
-  completion_percentage: 100.0
+  pending_tasks: 5
+  completion_percentage: 90.2
 
 tasks:
   - task_id: "T001"
@@ -329,22 +329,165 @@ tasks:
       plan_item: "5.3"
       requirements: ["REQ-023"]
       full_trace: "REQ-023 -> Step 5.3 -> T032 -> payment response and receipt UI"
+  - task_id: "T033"
+    status: "completed"
+    implementation:
+      files_changed: ["db/schema.sql", "db/migrations/002_cell_status_maintenance.sql", "backend/app/routes/transits.py"]
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["REQ-029"]
+      full_trace: "REQ-029 -> Step 6.1 -> T033 -> cell status schema and migration"
+  - task_id: "T034"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/cells.py"]
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["REQ-029"]
+      full_trace: "REQ-029 -> Step 6.1 -> T034 -> cell occupancy API"
+  - task_id: "T035"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/cells/", "frontend/src/app/app.routes.ts", "frontend/src/app/app.ts"]
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["REQ-029"]
+      full_trace: "REQ-029 -> Step 6.1 -> T035 -> cell status screen and route"
+  - task_id: "T036"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/users.py", "backend/app/main.py"]
+    upstream_trace:
+      plan_item: "6.2"
+      requirements: ["REQ-030", "RNF-002", "RNF-003"]
+      full_trace: "REQ-030,RNF-002,RNF-003 -> Step 6.2 -> T036 -> Administrator-only user API"
+  - task_id: "T037"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/users/", "frontend/src/app/app.routes.ts", "frontend/src/app/app.ts"]
+    upstream_trace:
+      plan_item: "6.2"
+      requirements: ["REQ-030"]
+      full_trace: "REQ-030 -> Step 6.2 -> T037 -> user administration UI"
+  - task_id: "T038"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/contracts.py"]
+    upstream_trace:
+      plan_item: "6.3"
+      requirements: ["REQ-031", "RNF-007"]
+      full_trace: "REQ-031,RNF-007 -> Step 6.3 -> T038 -> cancellation audit API"
+  - task_id: "T039"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/contracts/contract-audit.component.ts", "frontend/src/app/features/contracts/contract-audit.component.html"]
+    upstream_trace:
+      plan_item: "6.3"
+      requirements: ["REQ-031", "RNF-003"]
+      full_trace: "REQ-031,RNF-003 -> Step 6.3 -> T039 -> Administrator-only cancellation audit UI"
+  - task_id: "T040"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/core/api-success.service.ts", "frontend/src/app/core/api-error.interceptor.ts", "frontend/src/app/app.html"]
+    upstream_trace:
+      plan_item: "6.4"
+      requirements: ["REQ-032"]
+      full_trace: "REQ-032 -> Step 6.4 -> T040 -> creation success notification"
+  - task_id: "T041"
+    status: "completed"
+    verification:
+      build_passed: true
+      test_results:
+        backend_command: "backend/.venv/Scripts/python.exe -m unittest discover -s tests -v"
+        backend_passed: 23
+        backend_failed: 0
+        frontend_command: "npm test"
+        frontend_passed: 5
+        frontend_failed: 0
+        build_command: "npm run build"
+        build_passed: true
+        compileall_passed: true
+        yaml_checkpoints_valid: true
+        git_diff_check_passed: true
+      notes: "Backend and frontend unit tests, Angular production build, Python compileall, checkpoint YAML parsing, and git diff --check passed. Authenticated/concurrent MySQL integration was not run."
+    upstream_trace:
+      plan_item: "6.1,6.2,6.3,6.4"
+      requirements: ["REQ-029", "REQ-030", "REQ-031", "REQ-032"]
+      full_trace: "REQ-029..REQ-032 -> Step 6 -> T041 -> feature regression tests and build"
+  - task_id: "T042"
+    status: "completed"
+    implementation:
+      files_changed: ["README.md", "backend/README.md", "frontend/README.md", ".specify/memory/constitution.md", "docs/", "specs/001-parking-operations/"]
+    upstream_trace:
+      plan_item: "6.1,6.2,6.3,6.4"
+      requirements: ["REQ-029", "REQ-030", "REQ-031", "REQ-032"]
+      full_trace: "REQ-029..REQ-032 -> Step 6 -> T042 -> user documentation and diagrams"
+  - task_id: "T043"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/contracts.py", "backend/app/routes/transits.py"]
+    upstream_trace:
+      plan_item: "4.1,4.2"
+      requirements: ["REQ-009"]
+      full_trace: "REQ-009 -> Steps 4.1,4.2 -> T043 -> vehicle state query and Anti-Passback lock"
+  - task_id: "T044"
+    status: "completed"
+    implementation:
+      files_changed: ["frontend/src/app/features/parking/parking.component.ts", "frontend/src/app/features/parking/parking.component.html"]
+    upstream_trace:
+      plan_item: "4.1,4.2"
+      requirements: ["REQ-009"]
+      full_trace: "REQ-009 -> Steps 4.1,4.2 -> T044 -> occupied plate UI behavior"
+  - task_id: "T045"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/tests/test_admin_features.py", "frontend/src/app/features/parking/parking.component.spec.ts", "specs/001-parking-operations/", "docs/"]
+    upstream_trace:
+      plan_item: "4.1,4.2"
+      requirements: ["REQ-009"]
+      full_trace: "REQ-009 -> Steps 4.1,4.2 -> T045 -> Anti-Passback regressions and docs"
+  - task_id: "T046"
+    status: "completed"
+    implementation:
+      files_changed: ["backend/app/routes/transits.py", "backend/tests/test_admin_features.py", "frontend/src/app/features/parking/parking.component.spec.ts"]
+    upstream_trace:
+      plan_item: "4.3"
+      requirements: ["REQ-009", "RNF-006"]
+      full_trace: "REQ-009,RNF-006 -> Step 4.3 -> T046 -> lock-result consumption, serialized exit, and re-entry after exit"
+  - task_id: "T047"
+    status: "pending"
+    upstream_trace:
+      plan_item: "7.1"
+      requirements: ["RNF-001"]
+      full_trace: "RNF-001 -> Step 7.1 -> T047 -> measured 50-user availability-query load test"
+  - task_id: "T048"
+    status: "pending"
+    upstream_trace:
+      plan_item: "7.1"
+      requirements: ["RNF-006"]
+      full_trace: "RNF-006 -> Step 7.1 -> T048 -> MySQL concurrency and payment idempotency"
+  - task_id: "T049"
+    status: "pending"
+    upstream_trace:
+      plan_item: "7.2"
+      requirements: ["RNF-004"]
+      full_trace: "RNF-004 -> Step 7.2 -> T049 -> deployment availability evidence"
+  - task_id: "T050"
+    status: "pending"
+    upstream_trace:
+      plan_item: "7.2"
+      requirements: ["RNF-005"]
+      full_trace: "RNF-005 -> Step 7.2 -> T050 -> daily backup and restore rehearsal"
+  - task_id: "T051"
+    status: "pending"
+    upstream_trace:
+      plan_item: "7.3"
+      requirements: ["RNF-008"]
+      full_trace: "RNF-008 -> Step 7.3 -> T051 -> timed operator usability test"
 
-pending_tasks: []
+pending_tasks: ["T047", "T048", "T049", "T050", "T051"]
 
-untracked_changes:
-  - file: "backend/app/seed.py"
-    change_type: "added"
-    concern: "Provisioning tool explicitly requested by the user; prompts for credentials and does not hardcode them."
-  - file: "backend/README.md"
-    change_type: "added"
-    concern: "Setup, database configuration, seed, and API usage documentation."
-  - file: "backend/tests/test_domain.py"
-    change_type: "added"
-    concern: "Automated domain-rule tests used as implementation verification."
-  - file: ".gitignore"
-    change_type: "added"
-    concern: "Excludes generated dependencies, caches, build output, logs, and local environment files."
+repository_state: "backend/requirements-dev.txt is newly added and remains unstaged; no commit or push was made."
 
 traceability_chain:
   - chain_id: "TRACE-CASH-CLOSE"
@@ -363,9 +506,12 @@ traceability_chain:
     status: "complete"
 
 validation:
-  passed: true
+  passed: false
+  unit_validation_passed: true
+  non_functional_validation_passed: false
   errors: []
   warnings:
-    - "The contract lifecycle migration must be applied once to databases created from the prior schema; it was not executed in this implementation session."
-    - "Authenticated success-path MySQL integration was not run."
-  blocking_issues: []
+    - "Apply migrations 001 and 002 to an existing database only if each migration is pending; neither was run in this session."
+    - "Authenticated MySQL integration has not been run."
+    - "RNF-001, RNF-004, RNF-005, RNF-006, and RNF-008 lack completion evidence."
+  blocking_issues: ["T047", "T048", "T049", "T050", "T051"]
