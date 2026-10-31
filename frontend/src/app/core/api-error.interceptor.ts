@@ -1,15 +1,26 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, tap, throwError } from 'rxjs';
 import { ApiErrorService } from './api-error.service';
+import { ApiSuccessService } from './api-success.service';
 
 export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const errors = inject(ApiErrorService);
+  const successes = inject(ApiSuccessService);
   const apiRequest = request.url.startsWith('/api')
     ? request.clone({ withCredentials: true })
     : request;
+  if (apiRequest.url.startsWith('/api') && apiRequest.method !== 'GET') {
+    successes.clear();
+  }
 
   return next(apiRequest).pipe(
+    tap((event) => {
+      if (event instanceof HttpResponse && event.status === 201) {
+        errors.clear();
+        successes.show('El registro se creó exitosamente.');
+      }
+    }),
     catchError((error: unknown) => {
       const isExpectedSessionMiss =
         error instanceof HttpErrorResponse &&

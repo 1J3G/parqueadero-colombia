@@ -1,47 +1,52 @@
 # Backend local setup
 
-The application uses a local MySQL database. It does not create the database or run migrations when the API starts.
+The backend is a FastAPI application connected to a local MySQL database. It does not create the database or apply migrations when it starts.
 
-1. Create the schema with a MySQL account allowed to create the database:
+## Database setup
 
-   ```powershell
-   Get-Content ..\db\schema.sql | mysql -u root -p
-   ```
+From `backend`, create a new database with:
 
-   If `autos_colombia` already has the earlier schema, apply the contract lifecycle migration once:
+```powershell
+Get-Content ..\db\schema.sql | mysql -u root -p
+```
 
-   ```powershell
-   Get-Content ..\db\migrations\001_contract_status_lifecycle.sql | mysql -u root -p
-   ```
+For an existing database created from an earlier schema, apply migrations in order. Apply only migrations that have not already been run:
 
-   Do not run this migration on a new database created from the updated `schema.sql`.
+```powershell
+Get-Content ..\db\migrations\001_contract_status_lifecycle.sql | mysql -u root -p
+Get-Content ..\db\migrations\002_cell_status_maintenance.sql | mysql -u root -p
+```
 
-2. Create a MySQL application account with access to `autos_colombia`, then copy `.env.example` to `.env` and set its credentials. Do not commit `.env`.
-3. Install dependencies and seed the initial Administrator and Operario accounts. The seed prompts for each identity document and password; it never stores plaintext passwords or overwrites an existing account:
+Do not run the migrations on a new database created from the current `schema.sql`.
 
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   python -m app.seed
-   ```
+Create a MySQL application account with access to `autos_colombia`, copy `.env.example` to `.env`, and set the connection values. Do not commit `.env`.
 
-4. Insert the parkadero's real cells into the `cells` table. The specification does not set capacity or cell labels, so the application does not invent default cells.
-5. Start the API:
+## Install and run
 
-   ```powershell
-   uvicorn app.main:app --reload
-   ```
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m app.seed
+uvicorn app.main:app --reload
+```
 
-Run the Angular application from `frontend` with `npm start`. Its development proxy forwards `/api` requests to the local API.
+The seed command creates the initial Administrator and Operario interactively. It hashes passwords and does not overwrite existing accounts. After the first setup, Administrators can create accounts from the application.
+
+The API is available at `http://localhost:8000`; interactive API documentation is at `http://localhost:8000/docs`.
+
+Add the parkadero's real cells to the `cells` table. The application does not invent default cells or capacity.
 
 ## Implemented API
 
-- `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
-- `POST /api/cash/open`, `GET /api/cash/current`, `GET /api/cash/open` (Administrador), `POST /api/cash/{id}/close`
-- `GET /api/cells`
-- `POST /api/customers`, `GET /api/customers`
-- `POST /api/contracts`, `GET /api/contracts`, `PATCH /api/contracts/{id}/plate`, `POST /api/contracts/{id}/cancel` (Administrador; justification required)
-- `POST /api/transits/entry`, `POST /api/transits/exit`
-- `POST /api/payments`, `POST /api/payments/{id}/void`
-- `GET /api/receipts/{payment_id}`
+- Authentication: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- Cash: `POST /api/cash/open`, `GET /api/cash/current`, `GET /api/cash/open` (Administrator), `POST /api/cash/{id}/close`
+- Cells: `GET /api/cells`, `PATCH /api/cells/{id}/status` (Administrator; only non-occupied cells)
+- Customers: `POST /api/customers`, `GET /api/customers`
+- Contracts: `POST /api/contracts`, `GET /api/contracts`, `PATCH /api/contracts/{id}/plate` (Administrator), `POST /api/contracts/{id}/cancel` (Administrator), `GET /api/contracts/cancellations` (Administrator)
+- Users: `GET /api/users`, `POST /api/users` (Administrator)
+- Transits: `POST /api/transits/entry`, `POST /api/transits/exit`
+- Payments: `POST /api/payments`, `POST /api/payments/{id}/void` (Administrator)
+- Receipts: `GET /api/receipts/{payment_id}`
+
+The contract listing includes each vehicle's current inside/outside state and occupied cell. Entry registration applies Anti-Passback by vehicle (and therefore by its unique plate): it locks the vehicle row and rejects a second entry until an exit is recorded, including when a different contract references that vehicle.

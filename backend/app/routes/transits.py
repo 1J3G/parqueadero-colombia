@@ -78,6 +78,11 @@ def register_entry(payload: EntryRequest, operator: dict = Depends(get_current_u
         if contract is None:
             raise HTTPException(status_code=404, detail="No se encontró el contrato.")
 
+        cursor.execute(
+            "SELECT id FROM vehicles WHERE id = %s FOR UPDATE",
+            (contract["vehicle_id"],),
+        )
+        cursor.fetchone()
         cursor.execute("SELECT CURRENT_DATE() AS server_date")
         server_date: date = cursor.fetchone()["server_date"]
         exceptional = payload.exceptional_authorization is not None
@@ -115,11 +120,11 @@ def register_entry(payload: EntryRequest, operator: dict = Depends(get_current_u
             raise HTTPException(status_code=404, detail="No se encontró la celda.")
         if not compatible_cell(contract["vehicle_type"], cell["category"]):
             raise HTTPException(status_code=409, detail="La celda no es compatible con el tipo de vehículo.")
-        if cell["status"] != "Disponible":
-            raise HTTPException(status_code=409, detail="La celda se encuentra ocupada.")
+        if cell["status"] != "Libre":
+            raise HTTPException(status_code=409, detail="La celda no se encuentra libre.")
 
         cursor.execute(
-            "UPDATE cells SET status = 'Ocupada' WHERE id = %s AND status = 'Disponible'",
+            "UPDATE cells SET status = 'Ocupado' WHERE id = %s AND status = 'Libre'",
             (payload.cell_id,),
         )
         if cursor.rowcount != 1:
@@ -198,7 +203,7 @@ def register_exit(payload: ExitRequest, operator: dict = Depends(get_current_use
             raise HTTPException(status_code=409, detail="El vehículo está fuera del parqueadero.")
 
         cursor.execute(
-            "UPDATE cells SET status = 'Disponible' WHERE id = %s AND status = 'Ocupada'",
+            "UPDATE cells SET status = 'Libre' WHERE id = %s AND status = 'Ocupado'",
             (entry["cell_id"],),
         )
         if cursor.rowcount != 1:

@@ -35,5 +35,8 @@
 
 ## Notes
 
-- Los requisitos se limitan a las reglas aportadas y a la aclaración de que las celdas Discapacitado admiten solo vehículos Carro.
+- Se añadieron las historias de consulta/mantenimiento de celdas, alta de usuarios, auditoría de cancelaciones y confirmación de creación, con controles de acceso verificables.
+- Las celdas Discapacitado admiten solo vehículos Carro.
+- El historial de cancelaciones usa los campos de auditoría existentes en contratos, sin crear una segunda bitácora.
 - No se especifican duración ni cálculo del importe de mensualidades; no se añaden reglas para esos valores.
+- REQ-009 cubre tanto la placa/vehículo asociado como la selección en la interfaz y el rechazo de entradas duplicadas en el backend.

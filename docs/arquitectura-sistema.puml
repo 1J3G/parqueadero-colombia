@@ -12,18 +12,24 @@ package "Frontend - Angular SPA" {
   component "Caja" as CashUI
   component "Contratos y clientes" as ContractsUI
   component "Operación de parqueo\nEntradas / salidas" as ParkingUI
+  component "Estado de celdas" as CellsUI
   component "Pagos" as PaymentsUI
+  component "Usuarios\n(Administrador)" as UsersUI
+  component "Auditoría de contratos\n(Administrador)" as ContractAuditUI
 
   SPA -- AuthUI
   SPA -- CashUI
   SPA -- ContractsUI
   SPA -- ParkingUI
+  SPA -- CellsUI
   SPA -- PaymentsUI
+  SPA -- UsersUI
+  SPA -- ContractAuditUI
 }
 
 package "Backend - API FastAPI" {
   component "Aplicación FastAPI\nValidación y manejo de errores" as API
-  component "Routers REST\n/auth, /cash, /cells,\n/customers, /contracts,\n/transits, /payments, /receipts" as Routes
+  component "Routers REST\n/auth, /cash, /cells,\n/customers, /contracts,\n/transits, /payments,\n/receipts, /users" as Routes
   component "Servicios de dominio\nAutenticación, caja,\ncontratos, vehículos,\ntránsitos, pagos y recibos" as Domain
   component "Persistencia\nConector MySQL y\ntransacciones" as Persistence
 }
@@ -102,7 +108,7 @@ class "Cell\ncells" as Cell {
   id : BIGINT
   label : VARCHAR(30) UNIQUE
   category : ENUM(Carro, Moto, Camioneta, Discapacitado)
-  status : ENUM(Disponible, Ocupada)
+  status : ENUM(Libre, Ocupado, En mantenimiento)
 }
 
 class "CashOpening\ncash_openings" as CashOpening {

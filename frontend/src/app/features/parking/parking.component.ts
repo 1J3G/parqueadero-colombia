@@ -9,6 +9,8 @@ interface ParkingContract {
   status: string;
   expires_on: string | null;
   customer_full_name: string;
+  vehicle_inside: boolean;
+  occupied_cell_label: string | null;
 }
 
 interface ParkingCell {
@@ -57,7 +59,7 @@ export class ParkingComponent implements OnInit {
     this.contractId.set(contractId);
     this.cellId.set(null);
     const contract = this.contracts().find((item) => item.id === contractId);
-    if (contract) {
+    if (contract && !contract.vehicle_inside) {
       this.http
         .get<ParkingCell[]>(`/api/cells?vehicle_type=${encodeURIComponent(contract.vehicle_type)}`)
         .subscribe({ next: (cells) => this.cells.set(cells) });
@@ -69,7 +71,7 @@ export class ParkingComponent implements OnInit {
   registerEntry(): void {
     const selectedContract = this.selectedContract();
     const cellId = this.cellId();
-    if (!selectedContract || cellId === null) {
+    if (!selectedContract || selectedContract.vehicle_inside || cellId === null) {
       return;
     }
     const damageDescription = this.damageDescription().trim();
@@ -102,7 +104,7 @@ export class ParkingComponent implements OnInit {
         this.exceptionalAccess.set(false);
         this.exceptionalNovelty.set('');
         this.damageDescription.set('');
-        this.refreshCells(selectedContract.vehicle_type);
+        this.refreshParkingState(selectedContract.vehicle_type);
       },
       error: () => this.submitting.set(false),
       complete: () => this.submitting.set(false),
@@ -116,18 +118,20 @@ export class ParkingComponent implements OnInit {
     }
     this.submitting.set(true);
     this.http.post('/api/transits/exit', { contract_id: contractId }).subscribe({
-      next: () => this.refreshCells(this.selectedContract()?.vehicle_type ?? ''),
+      next: () => this.refreshParkingState(this.selectedContract()?.vehicle_type ?? ''),
       error: () => this.submitting.set(false),
       complete: () => this.submitting.set(false),
     });
   }
 
-  private refreshCells(vehicleType: string): void {
-    if (!vehicleType) {
-      return;
+  private refreshParkingState(vehicleType: string): void {
+    this.http.get<ParkingContract[]>('/api/contracts').subscribe({
+      next: (contracts) => this.contracts.set(contracts),
+    });
+    if (vehicleType) {
+      this.http
+        .get<ParkingCell[]>(`/api/cells?vehicle_type=${encodeURIComponent(vehicleType)}`)
+        .subscribe({ next: (cells) => this.cells.set(cells) });
     }
-    this.http
-      .get<ParkingCell[]>(`/api/cells?vehicle_type=${encodeURIComponent(vehicleType)}`)
-      .subscribe({ next: (cells) => this.cells.set(cells) });
   }
 }

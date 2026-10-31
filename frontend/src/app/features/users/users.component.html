@@ -1,0 +1,41 @@
+<section class="page-heading">
+  <p class="eyebrow">Administración</p>
+  <h1>Usuarios del sistema</h1>
+  <p class="muted">Solo un Administrador puede crear cuentas de Operario o Administrador.</p>
+</section>
+
+<section class="panel">
+  <h2>Crear usuario</h2>
+  <form class="form-grid" (ngSubmit)="createUser()">
+    <label>Documento
+      <input name="document" required maxlength="30" [ngModel]="document()" (ngModelChange)="document.set($event)" />
+    </label>
+    <label>Rol
+      <select name="role" [ngModel]="role()" (ngModelChange)="role.set($event)">
+        <option>Operario</option><option>Administrador</option>
+      </select>
+    </label>
+    <label>Contraseña inicial
+      <input name="password" type="password" required maxlength="256" autocomplete="new-password" [ngModel]="password()" (ngModelChange)="password.set($event)" />
+    </label>
+    <button class="primary" type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Creando…' : 'Crear usuario' }}
+    </button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Usuarios registrados</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Documento</th><th>Rol</th><th>Creado</th></tr></thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr><td>{{ user.document }}</td><td>{{ user.role }}</td><td>{{ user.created_at | date:'medium' }}</td></tr>
+        } @empty {
+          <tr><td colspan="3" class="muted">No hay usuarios registrados.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

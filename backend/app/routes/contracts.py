@@ -75,11 +75,49 @@ def list_contracts(_user: dict = Depends(get_current_user)) -> list[dict]:
             """
             SELECT c.id, c.customer_id, c.vehicle_id, v.plate, v.vehicle_type,
                    c.status, c.expires_on, cu.document AS customer_document,
-                   cu.full_name AS customer_full_name
+                   cu.full_name AS customer_full_name,
+                   latest.direction = 'Entrada' AS vehicle_inside,
+                   CASE
+                     WHEN latest.direction = 'Entrada' THEN occupied_cell.label
+                     ELSE NULL
+                   END AS occupied_cell_label
             FROM contracts c
             JOIN vehicles v ON v.id = c.vehicle_id
             JOIN customers cu ON cu.id = c.customer_id
+            LEFT JOIN transits latest ON latest.id = (
+                SELECT t.id
+                FROM transits t
+                WHERE t.vehicle_id = v.id
+                ORDER BY t.occurred_at DESC, t.id DESC
+                LIMIT 1
+            )
+            LEFT JOIN cells occupied_cell ON occupied_cell.id = latest.cell_id
             ORDER BY c.created_at DESC, c.id DESC
+            """
+        )
+        contracts = cursor.fetchall()
+        for contract in contracts:
+            contract["vehicle_inside"] = bool(contract["vehicle_inside"])
+        return contracts
+
+
+@router.get("/cancellations")
+def list_contract_cancellations(
+    _administrator: dict = Depends(require_administrator),
+) -> list[dict]:
+    with transaction() as cursor:
+        cursor.execute(
+            """
+            SELECT c.id AS contract_id, c.status, c.cancelled_at,
+                   c.cancellation_justification, u.document AS administrator_document,
+                   cu.document AS customer_document, cu.full_name AS customer_full_name,
+                   v.plate
+            FROM contracts c
+            LEFT JOIN users u ON u.id = c.cancelled_by
+            JOIN customers cu ON cu.id = c.customer_id
+            JOIN vehicles v ON v.id = c.vehicle_id
+            WHERE c.status = 'Cancelado'
+            ORDER BY c.cancelled_at DESC, c.id DESC
             """
         )
         return cursor.fetchall()

@@ -7,6 +7,9 @@ skinparam componentStyle rectangle
 package "Frontend Angular" as Frontend {
   package "app.routes y app.config" as FrontendConfig
   package "features.parking" as ParkingFeature
+  package "features.cells" as CellsFeature
+  package "features.users" as UsersFeature
+  package "features.contracts.contract-audit" as ContractAuditFeature
   package "core.auth.guard y auth.service" as AuthCore
   package "core.api-error.interceptor" as ErrorInterceptor
 }
@@ -16,6 +19,7 @@ package "API FastAPI" as Backend {
   package "app.routes.transits" as TransitRoutes
   package "app.routes.cells" as CellRoutes
   package "app.routes.contracts" as ContractRoutes
+  package "app.routes.users" as UserRoutes
   package "app.auth" as AuthModule
   package "app.cash" as CashModule
   package "app.domain" as DomainModule
@@ -42,11 +46,15 @@ ParkingFeature ..> ErrorInterceptor : HTTP con credenciales y errores
 ParkingFeature ..> ContractRoutes : GET /api/contracts
 ParkingFeature ..> CellRoutes : GET /api/cells
 ParkingFeature ..> TransitRoutes : POST /api/transits/entry y exit
+CellsFeature ..> CellRoutes : consulta estados y placa\nPATCH mantenimiento para Administrador
+UsersFeature ..> UserRoutes : GET/POST /api/users\nAdministrador
+ContractAuditFeature ..> ContractRoutes : GET /api/contracts/cancellations\nAdministrador
 AuthCore ..> AuthModule : GET /api/auth/me
 
 MainApp ..> TransitRoutes : registra router
 MainApp ..> CellRoutes : registra router
 MainApp ..> ContractRoutes : registra router
+MainApp ..> UserRoutes : registra router
 TransitRoutes ..> AuthModule : autentica usuario y administrador
 TransitRoutes ..> CashModule : verifica caja del Operario
 TransitRoutes ..> DomainModule : valida acceso y celda
@@ -56,9 +64,12 @@ TransitRoutes ..> DatabaseModule : transaccion SQL
 CellRoutes ..> AuthModule : autentica usuario
 CellRoutes ..> DomainModule : filtra celdas compatibles
 CellRoutes ..> DatabaseModule : consulta celdas
+UserRoutes ..> AuthModule : exige Administrador
+UserRoutes ..> DatabaseModule : consulta y crea cuentas
 ContractRoutes ..> AuthModule : autentica usuario y rol
 ContractRoutes ..> ContractLogic : consulta contratos y vencimientos
 ContractRoutes ..> DatabaseModule : transaccion SQL
+ContractRoutes ..> DatabaseModule : consulta auditoria de cancelaciones
 AuthModule ..> DatabaseModule : consulta sesiones y usuarios
 CashModule ..> DatabaseModule : consulta caja abierta
 NoveltyLogic ..> DatabaseModule : inserta novedad
@@ -76,10 +87,13 @@ DatabaseModule ..> Schema : MySQL Connector
 note bottom of TransitRoutes
   La entrada y salida se ejecutan en transacciones.
   El registro de transito es inmutable.
+  Antes de aceptar una entrada, el backend bloquea el vehiculo
+  y valida su ultimo transito para serializar el Anti-Passback.
 end note
 
 note bottom of ParkingFeature
   El diagrama muestra dependencias del codigo actual:
-  el frontend consume contratos, celdas y transitos.
+  el frontend consume contratos y celdas; el listado de contratos
+  informa si la placa esta dentro y cual celda ocupa.
 end note
 @enduml

@@ -4,7 +4,7 @@
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md)
 
-**Tests**: No se agregan tareas independientes de pruebas automatizadas porque la especificación no las solicita. Se incluyen pruebas unitarias de reglas de dominio como verificación de implementación; cada historia conserva sus criterios de aceptación independientes.
+**Tests**: Las nuevas funciones incluyen pruebas unitarias para reglas de estado y autorización, además de compilación y pruebas Angular. Los criterios de aceptación de cada historia siguen siendo la referencia funcional.
 
 **Organization**: Tareas agrupadas por las historias de usuario P1 de `spec.md`; cada tarea con referencia `[Plan:X.Y]` traza al plan de implementación.
 
@@ -59,7 +59,7 @@
 ### Implementation
 
 - [x] T014 [P] [US2] [Plan:3.1] Implementar alta y consulta de clientes con documento CC, CE o NIT único en `backend/app/routes/customers.py`.
-- [x] T015 [P] [US2] [Plan:3.1] Implementar asociación vehículo-contrato y validación de placas ABC123 para carros y ABC12D para motos en `backend/app/vehicles.py` y `backend/app/routes/vehicles.py`.
+- [x] T015 [P] [US2] [Plan:3.1] Implementar asociación vehículo-contrato y validación de placas ABC123 para carros y ABC12D para motos en `backend/app/vehicles.py` y `backend/app/routes/contracts.py`.
 - [x] T016 [US2] [Plan:3.2] Implementar creación de contratos con estado inicial Pendiente de Pago y estados permitidos, manteniendo Cancelado como no reactivable, en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
 - [x] T017 [US2] [Plan:3.3] Restringir la autorización de cambio de placa al rol Administrador en `backend/app/contracts.py` y `backend/app/routes/contracts.py`.
 - [x] T018 [US2] [Plan:3.1,3.2,3.3] Crear las pantallas Angular de clientes, vehículos y contratos con validaciones de documento, placa, estado y acciones autorizadas en `frontend/src/app/features/contracts/`.
@@ -75,13 +75,13 @@
 ### Implementation
 
 - [x] T019 [US3] [Plan:4.1] Implementar consulta de disponibilidad y compatibilidad Carro↔Carro/Discapacitado, Moto↔Moto y Camioneta↔Camioneta en `backend/app/cells.py` y `backend/app/routes/cells.py`.
-- [x] T020 [US3] [Plan:4.2] Implementar política de entrada según estado y vencimiento contractual, autorización explícita de Administrador para estados Vencido/Pendiente de Pago/Cancelado y Anti-Passback en `backend/app/transits.py`.
-- [x] T021 [US3] [Plan:4.2,4.3] Registrar entrada con fecha/hora del servidor, operario y celda; ocupar la celda compatible de forma atómica y rechazar asignaciones ocupadas en `backend/app/transits.py` y `backend/app/routes/transits.py`.
-- [x] T022 [US3] [Plan:4.3] Registrar salida inmutable con datos del tránsito y liberar inmediatamente la celda asociada en `backend/app/transits.py` y `backend/app/routes/transits.py`.
+- [x] T020 [US3] [Plan:4.2] Implementar política de entrada según estado y vencimiento contractual, autorización explícita de Administrador para estados Vencido/Pendiente de Pago/Cancelado y Anti-Passback en `backend/app/domain.py` y `backend/app/routes/transits.py`.
+- [x] T021 [US3] [Plan:4.2,4.3] Registrar entrada con fecha/hora del servidor, operario y celda; cambiarla de Libre a Ocupado de forma atómica y rechazar asignaciones no libres en `backend/app/routes/transits.py`.
+- [x] T022 [US3] [Plan:4.3] Registrar salida inmutable con datos del tránsito y liberar inmediatamente la celda asociada en `backend/app/routes/transits.py`.
 - [x] T023 [US3] [Plan:4.4] Persistir novedades de acceso excepcional y daños preexistentes con severidad Leve/Moderada/Grave y vínculo inmutable al tránsito de entrada en `backend/app/novelties.py` y `backend/app/routes/transits.py`.
 - [x] T024 [US3] [Plan:4.1,4.2,4.4] Crear vistas Angular de disponibilidad, entrada y salida con selección de celda compatible y captura de novedades físicas en `frontend/src/app/features/parking/`.
 
-**Checkpoint**: Cada tránsito confirmado respeta sesión, vigencia/excepción, Anti-Passback y compatibilidad; entrada/salida y estado de celda no dejan cambios parciales.
+**Checkpoint**: Cada tránsito confirmado respeta sesión, vigencia/excepción, Anti-Passback y compatibilidad; una placa que ya ocupa una celda no puede asignarse a otra; entrada/salida y estado de celda no dejan cambios parciales.
 
 ## Phase 6: User Story 4 — Pagos, comprobantes y anulaciones (Priority: P1)
 
@@ -156,3 +156,38 @@
 
 - [x] T031 [Plan:1.2,3.2] Persistir el estado Vencido al detectar contratos Activos con vencimiento superado; permitir cancelación solo a Administradores con justificación obligatoria; conservar los cuatro estados y no reactivar Cancelados. Actualizar `db/schema.sql`, crear migración `db/migrations/001_contract_status_lifecycle.sql` para bases existentes y completar `backend/app/contracts.py`, `backend/app/routes/contracts.py` y `frontend/src/app/features/contracts/` per US2/AC5-AC7, REQ-006 (partial).
 - [x] T032 [Plan:5.3] Mostrar en el comprobante posterior al pago los datos de identificación del cliente usando el comprobante persistido o la respuesta del endpoint existente, en `frontend/src/app/features/payments/payments.component.ts` y `frontend/src/app/features/payments/payments.component.html` per US4/AC6, REQ-023, SC-006 (partial).
+
+## Phase 9: User Stories 5–8 — Celdas, cuentas, auditoría y confirmaciones
+
+**Purpose**: Completar las nuevas pantallas administrativas y operativas sin debilitar los permisos ni las transiciones atómicas existentes.
+
+### User Story 5 — Estado de celdas
+
+- [x] T033 [Plan:6.1] Actualizar el dominio de estados en `db/schema.sql`, añadir `db/migrations/002_cell_status_maintenance.sql` y conservar las transiciones Libre/Ocupado de entradas y salidas; excluir celdas En mantenimiento.
+- [x] T034 [Plan:6.1] Exponer la placa del vehículo estacionado en `GET /api/cells` y agregar `PATCH /api/cells/{id}/status` exclusivo de Administrador para cambiar celdas no ocupadas en `backend/app/routes/cells.py`.
+- [x] T035 [Plan:6.1] Crear la pantalla de consulta de celdas con placa y controles de mantenimiento solo para Administrador en `frontend/src/app/features/cells/`; proteger rutas de administración.
+
+### User Story 6 — Administración de usuarios
+
+- [x] T036 [Plan:6.2] Crear `GET/POST /api/users` protegido por rol Administrador; validar documento, rol y contraseña inicial y devolver datos sin credenciales en `backend/app/routes/users.py`.
+- [x] T037 [Plan:6.2] Crear la pantalla de alta/listado de usuarios para Administradores en `frontend/src/app/features/users/` y agregar su navegación y ruta protegida.
+
+### User Story 7 — Auditoría de cancelaciones
+
+- [x] T038 [Plan:6.3] Exponer cancelaciones con contrato, cliente, placa, Administrador, fecha y justificación mediante endpoint exclusivo de Administrador en `backend/app/routes/contracts.py`.
+- [x] T039 [Plan:6.3] Crear pantalla de auditoría de cancelaciones protegida y visible solo para Administradores en `frontend/src/app/features/contracts/contract-audit.component.*`.
+
+### User Story 8 — Confirmación de creación
+
+- [x] T040 [Plan:6.4] Mostrar mensaje global ante respuestas HTTP 201 sin emitir confirmación ante errores usando `frontend/src/app/core/api-success.service.ts`, `frontend/src/app/core/api-error.interceptor.ts` y `frontend/src/app/app.html`.
+
+### Tests and documentation
+
+- [x] T041 [Plan:6.1,6.2,6.3,6.4] Añadir y ejecutar pruebas de las transiciones de celdas, permisos administrativos y confirmaciones; ejecutar build y pruebas existentes de Angular y backend.
+- [x] T042 [Plan:6.1,6.2,6.3,6.4] Sincronizar README, constitución, guía de datos, diagramas, especificación, plan, tareas, checklist y research con el comportamiento actualizado.
+
+## Phase 10: Evitar asignaciones duplicadas para un vehículo dentro
+
+- [x] T043 [Plan:4.1,4.2] Devolver el estado dentro/fuera y celda ocupada al listar contratos; bloquear la fila del vehículo antes de validar Anti-Passback y rechazar entradas repetidas en `backend/app/routes/contracts.py` y `backend/app/routes/transits.py`.
+- [x] T044 [Plan:4.1,4.2] Ocultar selección de celda y envío de entrada para placas ocupadas, mostrar su celda y actualizar el estado tras entrada/salida en `frontend/src/app/features/parking/`.
+- [x] T045 [Plan:4.1,4.2] Agregar pruebas backend y frontend de selección ocupada y rechazo de entradas duplicadas; sincronizar especificación, constitución, plan, tareas, guías y diagramas con REQ-009.

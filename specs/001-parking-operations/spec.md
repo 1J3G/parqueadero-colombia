@@ -1,6 +1,6 @@
 # Especificación: Gestión de operaciones del parqueadero
 
-**Feature Branch**: `001-parking-operations`
+**Feature Branch**: `new-funct`
 
 **Creada**: 2026-10-24
 
@@ -8,7 +8,7 @@
 
 **Entrada**: Requisitos funcionales y de negocio para el Sistema de Parqueadero "Autos Colombia".
 
-**Constitución**: Los requisitos siguen las reglas RN-01 a RN-18 de la constitución del proyecto. No se incluyen capacidades no documentadas.
+**Constitución**: Los requisitos siguen las reglas RN-01 a RN-20 de la constitución del proyecto. No se incluyen capacidades no documentadas.
 
 ## Clarifications
 
@@ -20,6 +20,11 @@
 - Q: ¿Cómo debe obtenerse el valor neto de la mensualidad antes de calcular el IVA del comprobante fiscal? → A: El negocio fija la tarifa fuera del sistema y proporciona el valor neto al registrar el pago.
 - Q: ¿Cómo debe manejarse el cierre de caja? → A: El titular puede cerrar su caja y un Administrador puede cerrar cualquier caja abierta. Se registra la fecha y hora exactas del servidor, sin arqueo ni monto final.
 - Q: ¿Cómo se alcanza el estado Vencido y quién puede cancelar un contrato? → A: Al detectar que la fecha del servidor supera el vencimiento de un contrato Activo, el sistema persiste el estado Vencido. Solo un Administrador puede cancelar un contrato y debe proporcionar una justificación obligatoria.
+
+### Session 2026-10-30
+
+- Q: ¿Quién puede gestionar el mantenimiento de las celdas y qué celdas puede cambiar? → A: Solo un Administrador puede cambiar entre Libre y En mantenimiento, y únicamente si la celda no está Ocupada. Entradas y salidas siguen administrando Ocupado/Libre.
+- Q: ¿Cómo se establece la contraseña de una cuenta nueva? → A: El Administrador la define al crear el usuario y se almacena como hash.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -69,15 +74,16 @@ Un operario registra el tránsito de un vehículo, asigna una celda compatible y
 
 **Acceptance Scenarios**:
 
-1. **Given** un vehículo con contrato Activo cuya fecha actual no supera el vencimiento, estado Fuera del Parqueadero y una celda Disponible compatible, **When** el operario confirma la entrada, **Then** se registra el ingreso inmutable y la celda pasa a Ocupada de forma atómica.
+1. **Given** un vehículo con contrato Activo cuya fecha actual no supera el vencimiento, estado Fuera del Parqueadero y una celda Libre compatible, **When** el operario confirma la entrada, **Then** se registra el ingreso inmutable y la celda pasa a Ocupado de forma atómica.
 2. **Given** un contrato Vencido, Pendiente de Pago o Cancelado, **When** se intenta una entrada sin autorización explícita de un Administrador y sin registrar una novedad de acceso excepcional, **Then** el ingreso se bloquea.
 3. **Given** un contrato Cancelado, **When** un Administrador autoriza explícitamente el ingreso y se registra una novedad de acceso excepcional, **Then** el sistema puede permitir la entrada.
 4. **Given** un vehículo Dentro del Parqueadero, **When** se intenta otra entrada, **Then** se bloquea por Anti-Passback.
 5. **Given** un vehículo Fuera del Parqueadero, **When** se intenta registrar una salida, **Then** se bloquea por Anti-Passback.
-6. **Given** un vehículo dentro del parqueadero, **When** se confirma su salida, **Then** el tránsito se registra de forma inmutable y la celda asociada queda Disponible inmediatamente.
+6. **Given** un vehículo dentro del parqueadero, **When** se confirma su salida, **Then** el tránsito se registra de forma inmutable y la celda asociada queda Libre inmediatamente.
 7. **Given** una celda ocupada o incompatible, **When** se intenta asignarla a un vehículo, **Then** el sistema no confirma la entrada ni cambia su ocupación.
 8. **Given** daños preexistentes detectados durante el ingreso, **When** se confirma la entrada, **Then** cada novedad física queda asociada al tránsito de entrada y clasificada como Leve, Moderada o Grave.
 9. **Given** un tránsito registrado, **When** un usuario intenta editarlo o eliminarlo, **Then** el sistema rechaza la operación.
+10. **Given** una placa que ya tiene un vehículo dentro del parqueadero, **When** se consulta el módulo de entradas y salidas desde cualquier contrato asociado a esa placa, **Then** el sistema muestra la celda ocupada, no ofrece otra celda ni permite registrar una nueva entrada; el backend también rechaza solicitudes repetidas.
 
 ### User Story 4 - Abrir caja, cobrar mensualidades y anular pagos autorizadamente (Priority: P1)
 
@@ -99,11 +105,62 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 8. **Given** un pago registrado, **When** un Administrador confirma la anulación con sus credenciales y una justificación, **Then** el pago se anula y la justificación queda en la bitácora de auditoría.
 9. **Given** un contrato Cancelado, **When** se intenta reactivarlo mediante el pago de una mensualidad, **Then** el sistema exige crear un contrato nuevo en lugar de reactivar el Cancelado.
 
+### User Story 5 - Consultar y administrar celdas (Priority: P1)
+
+Un usuario autenticado consulta el estado de cada celda. La vista muestra Libre, Ocupado o En mantenimiento y la placa solo cuando hay un vehículo dentro. Un Administrador puede poner en mantenimiento una celda Libre o devolver a Libre una celda en mantenimiento.
+
+**Independent Test**: Consultar los tres estados y la placa de una celda ocupada; cambiar una celda libre a mantenimiento como Administrador; comprobar que Operario no puede hacerlo y que una celda Ocupada no puede cambiarse manualmente.
+
+**Acceptance Scenarios**:
+
+1. **Given** una sesión activa, **When** consulta las celdas, **Then** ve sus estados Libre, Ocupado o En mantenimiento.
+2. **Given** una celda Ocupada, **When** se muestra en la vista, **Then** se muestra la placa del vehículo estacionado en ella.
+3. **Given** una celda Libre, **When** un Administrador la pone En mantenimiento, **Then** no se ofrece para nuevas entradas hasta que un Administrador la marque Libre.
+4. **Given** una celda Ocupada, **When** se intenta cambiar manualmente su estado, **Then** el sistema rechaza la operación; la salida autorizada la libera automáticamente.
+5. **Given** un Operario, **When** intenta cambiar el estado de mantenimiento por API, **Then** el sistema deniega la operación.
+
+### User Story 6 - Administrar cuentas de usuario (Priority: P1)
+
+Un Administrador crea cuentas para Operarios y Administradores indicando documento, rol y contraseña inicial. Las contraseñas se almacenan con hash y únicamente Administradores pueden consultar o crear cuentas.
+
+**Independent Test**: Crear un usuario de cada rol como Administrador; comprobar el acceso denegado a Operario tanto en la interfaz como en la API; iniciar sesión con una cuenta creada y rechazar documentos duplicados o contraseñas vacías.
+
+**Acceptance Scenarios**:
+
+1. **Given** una sesión de Administrador, **When** crea un usuario con documento único, rol permitido y contraseña no vacía, **Then** la cuenta se guarda y puede autenticarse.
+2. **Given** una sesión de Operario, **When** intenta crear o listar usuarios, **Then** el backend rechaza la solicitud.
+3. **Given** un documento ya registrado o una contraseña vacía, **When** se intenta crear la cuenta, **Then** el sistema la rechaza sin guardar datos.
+4. **Given** una cuenta nueva, **When** se consulta la lista de usuarios, **Then** el sistema no expone la contraseña ni su hash.
+
+### User Story 7 - Auditar cancelaciones de contratos (Priority: P1)
+
+Un Administrador consulta el historial de contratos cancelados para revisar contrato, cliente, placa, documento del Administrador, fecha y justificación. La vista y el endpoint no están disponibles para Operarios.
+
+**Independent Test**: Cancelar un contrato como Administrador y comprobar que la auditoría lo lista con su justificación, autor y fecha; intentar abrir la pantalla y consultar el endpoint como Operario.
+
+**Acceptance Scenarios**:
+
+1. **Given** una sesión de Administrador, **When** consulta la auditoría, **Then** ve las cancelaciones en orden cronológico inverso con contrato, cliente, placa, Administrador, fecha y justificación.
+2. **Given** una sesión de Operario, **When** intenta consultar la auditoría por interfaz o API, **Then** el sistema deniega el acceso.
+3. **Given** una cancelación ya registrada, **When** se consulta su auditoría, **Then** el sistema conserva los datos originales de quién, cuándo y por qué.
+
+### User Story 8 - Confirmar creación de registros (Priority: P2)
+
+Cuando una operación crea un registro correctamente, el usuario recibe una confirmación visible y comprensible; los errores no deben mostrarse como confirmaciones de éxito.
+
+**Independent Test**: Completar cada operación de creación y comprobar un mensaje de éxito; provocar una respuesta de error y comprobar que no se muestra dicho mensaje.
+
+**Acceptance Scenarios**:
+
+1. **Given** una operación que crea un registro y termina exitosamente, **When** el servidor confirma la creación, **Then** la interfaz informa “El registro se creó exitosamente.”
+2. **Given** una solicitud de creación que falla, **When** la interfaz recibe un error, **Then** presenta el error y no muestra una confirmación de creación.
+
 ### Edge Cases
 
 - Un segundo ingreso para un vehículo ya dentro y una salida de un vehículo que está fuera deben rechazarse.
+- Una placa cuyo último tránsito es Entrada debe conservar una sola celda ocupada; seleccionar otro contrato asociado al mismo vehículo tampoco habilita una segunda entrada.
 - Un contrato Activo cuya fecha de vencimiento ya pasó no satisface la condición de ingreso, aunque su estado todavía no se haya actualizado a Vencido.
-- Si no existe una celda Disponible compatible, la entrada no se confirma y ninguna celda cambia de estado.
+- Si no existe una celda Libre compatible, la entrada no se confirma y ninguna celda cambia de estado.
 - Una transferencia sin referencia obligatoria no puede completar el registro del pago.
 - Para contratos Vencidos, Pendientes de Pago o Cancelados, la autorización administrativa de acceso excepcional no reemplaza el registro obligatorio de la novedad de acceso.
 - No se permite completar una operación de tránsito si no puede persistirse con la fecha y hora del servidor, el ID del operario y el ID de la celda.
@@ -120,7 +177,7 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **REQ-006**: El sistema MUST aceptar exclusivamente los estados contractuales Pendiente de Pago, Activo, Vencido y Cancelado; asignar Pendiente de Pago por defecto al contrato nuevo sin pago; persistir Vencido cuando detecte que la fecha del servidor supera el vencimiento de un contrato Activo; permitir cancelar contratos únicamente a un Administrador con justificación obligatoria; y exigir un contrato nuevo para sustituir uno Cancelado.
 - **REQ-007**: El sistema MUST permitir únicamente a un usuario con rol Administrador autorizar el cambio de placa de un contrato existente.
 - **REQ-008**: El sistema MUST permitir la entrada automatizada solo si el contrato está Activo y la fecha actual es menor o igual a su fecha de vencimiento.
-- **REQ-009**: El sistema MUST bloquear nuevas entradas para vehículos Dentro del Parqueadero y salidas para vehículos Fuera del Parqueadero.
+- **REQ-009**: El sistema MUST bloquear nuevas entradas para vehículos Dentro del Parqueadero y salidas para vehículos Fuera del Parqueadero. Si la placa ya ocupa una celda, la interfaz MUST mostrar esa celda y MUST NOT ofrecer otra celda ni habilitar una nueva entrada; el backend MUST rechazar la repetición incluso si se envía otra celda o un contrato diferente asociado al mismo vehículo.
 - **REQ-010**: El sistema MUST bloquear la entrada de vehículos con contrato Vencido, Pendiente de Pago o Cancelado hasta que un Administrador otorgue autorización explícita y se registre una novedad de acceso excepcional.
 - **REQ-011**: El sistema MUST persistir cada tránsito con fecha y hora exactas del servidor, ID del operario e ID de la celda asignada.
 - **REQ-012**: El sistema MUST impedir la edición y eliminación de registros de tránsito.
@@ -128,8 +185,8 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **REQ-014**: El sistema MUST exigir para cada novedad física la clasificación Leve, Moderada o Grave y asociarla de forma inmutable al tránsito de entrada correspondiente.
 - **REQ-015**: El sistema MUST manejar las categorías de celda Carro, Moto, Camioneta y Discapacitado como categorías fijas.
 - **REQ-016**: El sistema MUST validar compatibilidad estricta antes de asignar una celda: Carro con celda Carro o Discapacitado; Moto con celda Moto; Camioneta con celda Camioneta.
-- **REQ-017**: El sistema MUST cambiar de Disponible a Ocupada, de forma atómica al confirmar la entrada, la celda asignada y disponible.
-- **REQ-018**: El sistema MUST cambiar automáticamente a Disponible la celda ocupada al procesar la salida de su vehículo.
+- **REQ-017**: El sistema MUST cambiar de Libre a Ocupado, de forma atómica al confirmar la entrada, la celda asignada y disponible.
+- **REQ-018**: El sistema MUST cambiar automáticamente a Libre la celda Ocupada al procesar la salida de su vehículo.
 - **REQ-019**: El sistema MUST exigir que el operario abra caja con una base de efectivo antes de permitirle cobrar mensualidades.
 - **REQ-020**: El sistema MUST activar inmediatamente el contrato nuevo o renovable que no esté Cancelado cuando el pago se registre exitosamente y contar los meses pagados desde el vencimiento actual si el contrato aún está vigente, o desde la fecha del pago si el contrato está vencido o es nuevo.
 - **REQ-021**: El sistema MUST registrar los métodos Efectivo, Transferencia Bancaria y Tarjeta de Crédito/Débito.
@@ -140,6 +197,10 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **REQ-026**: El sistema MUST validar las placas colombianas especificadas: ABC123 para carros y ABC12D para motos, y rechazar las que no correspondan al formato de su tipo de vehículo.
 - **REQ-027**: El sistema MUST asociar cada pago recibido al operario que abrió la caja vigente.
 - **REQ-028**: El sistema MUST permitir al titular cerrar su caja abierta y a un Administrador cerrar cualquier caja abierta; registrará la fecha y hora exactas del servidor, dejará la caja no disponible para nuevas transacciones y no solicitará ni registrará un monto final de cierre.
+- **REQ-029**: El sistema MUST mostrar a usuarios autenticados todas las celdas con estado Libre, Ocupado o En mantenimiento y mostrar la placa del vehículo solo cuando la celda esté Ocupada. Solo un Administrador puede cambiar una celda Libre a En mantenimiento o una celda En mantenimiento a Libre; no se puede cambiar manualmente una celda Ocupada.
+- **REQ-030**: El sistema MUST permitir que solo un Administrador cree cuentas con documento único, rol Operario o Administrador y contraseña inicial no vacía; las contraseñas MUST almacenarse como hash y MUST NOT exponerse en consultas.
+- **REQ-031**: El sistema MUST permitir que solo un Administrador consulte la auditoría de cancelaciones, mostrando contrato, cliente, placa, documento del Administrador, fecha y justificación.
+- **REQ-032**: La interfaz MUST mostrar una confirmación visible cuando una operación crea un registro exitosamente y MUST NOT mostrar dicha confirmación si la solicitud falla.
 
 ### Non-Functional Requirements
 
@@ -161,7 +222,7 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **Caja**: Apertura realizada por un operario con base de efectivo, asociada a su turno y cerrada por el titular o un Administrador con fecha y hora del servidor.
 - **Tránsito**: Registro inmutable de entrada o salida que identifica fecha y hora del servidor, operario y celda.
 - **Novedad**: Descripción de acceso excepcional o daño preexistente; la novedad física incluye severidad y queda vinculada al tránsito de entrada.
-- **Celda**: Espacio con categoría fija y estado Disponible u Ocupada.
+- **Celda**: Espacio con categoría fija y estado Libre, Ocupado o En mantenimiento; si está Ocupado, se identifica el vehículo por su placa.
 - **Pago**: Recaudo de mensualidad con método, operario/caja y, para transferencia, referencia; su anulación requiere autorización y justificación.
 - **Comprobante fiscal**: Documento consecutivo asociado a un pago, con valores neto e IVA y datos del cliente.
 - **Bitácora de auditoría**: Registro de justificación de anulaciones de pago autorizadas.
@@ -173,12 +234,16 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 - **SC-001**: El 100% de los intentos de consulta de disponibilidad, entrada, salida y pago sin sesión activa son rechazados.
 - **SC-002**: El 100% de los intentos de transacción realizados por operarios sin caja abierta a su nombre son rechazados.
 - **SC-003**: El 100% de las entradas confirmadas cumplen las reglas de estado y vigencia del contrato, Anti-Passback y compatibilidad de celda, o cuentan con la autorización excepcional y novedad requeridas.
-- **SC-004**: El 100% de las entradas confirmadas dejan una celda compatible Ocupada, y el 100% de las salidas confirmadas liberan inmediatamente la celda asociada.
+- **SC-004**: El 100% de las entradas confirmadas dejan una celda compatible en estado Ocupado, y el 100% de las salidas confirmadas liberan inmediatamente la celda asociada como Libre.
 - **SC-005**: El 100% de los tránsitos conservan fecha y hora del servidor, ID del operario e ID de la celda y no admiten edición o eliminación.
 - **SC-006**: El 100% de los pagos exitosos generan un comprobante con numeración consecutiva única, valor neto, IVA del 19% y datos del cliente.
 - **SC-007**: El 100% de las anulaciones de pago registradas tienen autorización de Administrador, credenciales de confirmación y justificación de auditoría.
 - **SC-008**: El 100% de los pagos recibidos quedan asociados al operario que abrió la caja vigente.
 - **SC-009**: El 100% de los cierres de caja quedan registrados con hora del servidor y no habilitan transacciones posteriores; el titular puede abrir una caja nueva.
+- **SC-010**: El 100% de las celdas ocupadas muestran su placa y las celdas en mantenimiento son excluidas de las entradas.
+- **SC-011**: El 100% de las altas de usuario requieren rol Administrador, contraseña no vacía y almacenamiento no reversible de credenciales.
+- **SC-012**: El 100% de las cancelaciones consultadas conservan contrato, Administrador, fecha y justificación, y solo son visibles para Administradores.
+- **SC-013**: El 100% de las creaciones exitosas muestran confirmación y ninguna operación fallida muestra confirmación de éxito.
 
 ## Assumptions
 

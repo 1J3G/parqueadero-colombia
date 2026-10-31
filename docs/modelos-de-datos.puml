@@ -36,8 +36,9 @@ Usuario "1" -- "0..*" Auditoria : autoriza
 
 note right of Vehiculo
   Este MER refleja la especificacion:
-  cada vehiculo se asocia como maximo
-  a un contrato.
+  varios contratos pueden referenciar
+  el mismo vehiculo y comparten su
+  estado de ocupacion actual.
 end note
 @enduml
 
@@ -248,7 +249,7 @@ class "cells" as db_cells {
   +id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
   label : VARCHAR(30) <<UNIQUE, NOT NULL>>
   category : ENUM('Carro','Moto','Camioneta','Discapacitado') <<NOT NULL>>
-  status : ENUM('Disponible','Ocupada') <<NOT NULL>>
+  status : ENUM('Libre','Ocupado','En mantenimiento') <<NOT NULL>>
 }
 
 class "cash_openings" as db_cash {

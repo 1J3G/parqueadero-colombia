@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS cells (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   label VARCHAR(30) NOT NULL UNIQUE,
   category ENUM('Carro', 'Moto', 'Camioneta', 'Discapacitado') NOT NULL,
-  status ENUM('Disponible', 'Ocupada') NOT NULL DEFAULT 'Disponible'
+  status ENUM('Libre', 'Ocupado', 'En mantenimiento') NOT NULL DEFAULT 'Libre'
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS cash_openings (

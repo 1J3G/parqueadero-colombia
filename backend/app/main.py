@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.routes import auth, cash, cells, contracts, customers, payments, receipts, transits
+from app.routes import auth, cash, cells, contracts, customers, payments, receipts, transits, users
 
 app = FastAPI(title="Autos Colombia", version="1.0.0")
 
@@ -14,6 +14,7 @@ app.include_router(contracts.router)
 app.include_router(transits.router)
 app.include_router(payments.router)
 app.include_router(receipts.router)
+app.include_router(users.router)
 
 
 @app.exception_handler(RequestValidationError)

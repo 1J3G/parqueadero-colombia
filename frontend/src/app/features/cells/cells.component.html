@@ -1,0 +1,36 @@
+<section class="page-heading">
+  <p class="eyebrow">Estado de ocupación</p>
+  <h1>Celdas del parqueadero</h1>
+  <p class="muted">Las placas se muestran únicamente cuando la celda está ocupada.</p>
+</section>
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Celda</th><th>Categoría</th><th>Estado</th><th>Vehículo</th>@if (isAdministrator()) { <th>Administración</th> }</tr></thead>
+      <tbody>
+        @for (cell of cells(); track cell.id) {
+          <tr>
+            <td>{{ cell.label }}</td>
+            <td>{{ cell.category }}</td>
+            <td>{{ cell.status }}</td>
+            <td>{{ cell.status === 'Ocupado' ? cell.plate : '—' }}</td>
+            @if (isAdministrator()) {
+              <td>
+                @if (cell.status !== 'Ocupado') {
+                  <button class="secondary" type="button" [disabled]="submitting()" (click)="toggleMaintenance(cell)">
+                    {{ cell.status === 'Libre' ? 'Poner en mantenimiento' : 'Marcar como libre' }}
+                  </button>
+                } @else {
+                  <span class="muted">No disponible</span>
+                }
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr><td [attr.colspan]="isAdministrator() ? 5 : 4" class="muted">No hay celdas registradas.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

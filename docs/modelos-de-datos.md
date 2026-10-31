@@ -11,7 +11,7 @@ Este documento presenta el modelo entidad-relación (MER), el modelo relacional 
 - **Cliente**: titular de un contrato.
 - **Vehículo**: vehículo identificado por placa y tipo.
 - **Contrato**: mensualidad de un cliente para un vehículo.
-- **Celda**: espacio de parqueo con categoría y estado.
+- **Celda**: espacio de parqueo con categoría fija y estado Libre, Ocupado o En mantenimiento.
 - **Caja**: apertura de caja realizada por un usuario.
 - **Tránsito**: evento de entrada o salida de un vehículo.
 - **Novedad**: daño físico o acceso excepcional asociado a un tránsito.
@@ -30,6 +30,7 @@ Este documento presenta el modelo entidad-relación (MER), el modelo relacional 
 - Un contrato, caja y usuario pueden estar asociados a ninguno o muchos pagos; cada pago referencia exactamente un contrato, una caja y un usuario.
 - Un pago puede tener cero o un comprobante; cada comprobante referencia un pago.
 - Un pago y un administrador pueden estar asociados a ninguna o muchas auditorías; cada auditoría referencia exactamente un pago y un usuario administrador.
+- Una cancelación conserva en el contrato el administrador que la realizó, la fecha y la justificación; la consulta de auditoría reúne esos datos con el cliente y el vehículo.
 
 <!-- mermaid-checked: every attribute is `<type> <name> [<key>] ["<description>"]` with at most one of PK/FK/UK, no \n in descriptions, no {} in descriptions, every relationship label is double-quoted -->
 ```mermaid
@@ -221,7 +222,7 @@ El modelo físico vigente es el DDL de [`db/schema.sql`](../db/schema.sql). Se i
 | `customers` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `document_type ENUM('CC','CE','NIT') NOT NULL`; `document VARCHAR(30) NOT NULL UNIQUE`; `full_name VARCHAR(160) NOT NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
 | `vehicles` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `plate VARCHAR(6) NOT NULL UNIQUE`; `vehicle_type ENUM('Carro','Moto','Camioneta') NOT NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
 | `contracts` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `customer_id BIGINT UNSIGNED NOT NULL FK`; `vehicle_id BIGINT UNSIGNED NOT NULL FK`; `status ENUM('Pendiente de Pago','Activo','Vencido','Cancelado') NOT NULL DEFAULT 'Pendiente de Pago'`; `expires_on DATE NULL`; `cancelled_by BIGINT UNSIGNED NULL FK`; `cancellation_justification VARCHAR(1000) NULL`; `cancelled_at DATETIME(6) NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
-| `cells` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `label VARCHAR(30) NOT NULL UNIQUE`; `category ENUM('Carro','Moto','Camioneta','Discapacitado') NOT NULL`; `status ENUM('Disponible','Ocupada') NOT NULL DEFAULT 'Disponible'` |
+| `cells` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `label VARCHAR(30) NOT NULL UNIQUE`; `category ENUM('Carro','Moto','Camioneta','Discapacitado') NOT NULL`; `status ENUM('Libre','Ocupado','En mantenimiento') NOT NULL DEFAULT 'Libre'` |
 | `cash_openings` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `user_id BIGINT UNSIGNED NOT NULL FK`; `base_amount DECIMAL(12,2) NOT NULL`; `opened_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)`; `closed_at DATETIME(6) NULL` |
 | `transits` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `vehicle_id`, `contract_id`, `cell_id`, `operator_id BIGINT UNSIGNED NOT NULL FK`; `direction ENUM('Entrada','Salida') NOT NULL`; `occurred_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
 | `novelties` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `transit_id BIGINT UNSIGNED NOT NULL FK`; `novelty_type ENUM('Daño físico','Acceso excepcional') NOT NULL`; `damage_type ENUM('Golpe','Rayón','Falla') NULL`; `description VARCHAR(1000) NOT NULL`; `severity ENUM('Leve','Moderada','Grave') NULL`; `recorded_by BIGINT UNSIGNED NOT NULL FK`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
@@ -236,11 +237,15 @@ El modelo físico vigente es el DDL de [`db/schema.sql`](../db/schema.sql). Se i
 - Las claves foráneas y restricciones `UNIQUE` se indican en la tabla anterior y en el DDL.
 - Triggers impiden actualizar o eliminar tránsitos, actualizar o eliminar novedades, y eliminar pagos.
 - Triggers validan los campos requeridos para novedades físicas o de acceso excepcional, y validan que el pago tenga valor y meses positivos y que las transferencias tengan referencia.
+- La aplicación cambia las celdas Libre/Ocupado de forma transaccional con los tránsitos. Solo un Administrador puede cambiar Libre/En mantenimiento y la API rechaza cambios manuales sobre celdas ocupadas.
+- Anti-Passback se determina por el último tránsito del vehículo, compartido por cualquier contrato que lo referencie; la placa ya dentro conserva su celda hasta que se registre su salida. No hay cambio de esquema para esta regla.
+- Las cuentas se crean mediante la API con contraseña hasheada; las consultas de usuarios solo devuelven documento, rol y fecha de creación.
+- La auditoría de cancelaciones consulta los campos `cancelled_by`, `cancelled_at` y `cancellation_justification` de `contracts`; no crea una tabla de auditoría adicional.
 - La conexión de la aplicación inicia transacciones explícitas y usa `COMMIT` o `ROLLBACK`; el detalle de ejecución está en `backend/app/database.py`.
 
 ### Diferencias entre el modelo documentado y el esquema actual
 
-La especificación describe que un vehículo está asociado de forma exclusiva a un contrato. Sin embargo, `contracts.vehicle_id` tiene una clave foránea no única: el DDL **no impide** que existan varios contratos para el mismo vehículo. La relación física efectiva es un vehículo con cero o muchos contratos. Se documenta la diferencia para que el MER conceptual no se confunda con una restricción actualmente garantizada por MySQL.
+Cada contrato se vincula a un vehículo identificado por una placa única, pero la especificación no exige que el vehículo tenga un único contrato. `contracts.vehicle_id` tiene una clave foránea no única: el DDL permite varios contratos para el mismo vehículo. La relación efectiva es un vehículo con cero o muchos contratos y todos comparten su último tránsito para aplicar Anti-Passback.
 
 `receipts` conserva una instantánea de los datos del cliente y no tiene una clave foránea a `customers`. `receipt_counters` es una tabla técnica para asignar consecutivos y no tiene relación declarada por clave foránea con `receipts`.
 
@@ -248,4 +253,5 @@ La especificación describe que un vehículo está asociado de forma exclusiva a
 
 - Esquema físico inicial: [`db/schema.sql`](../db/schema.sql).
 - Migración para bases creadas con una versión anterior del esquema: [`db/migrations/001_contract_status_lifecycle.sql`](../db/migrations/001_contract_status_lifecycle.sql).
+- Migración para añadir el estado En mantenimiento y renombrar estados de celda existentes: [`db/migrations/002_cell_status_maintenance.sql`](../db/migrations/002_cell_status_maintenance.sql).
 - Especificación de entidades y requisitos: [`specs/001-parking-operations/spec.md`](../specs/001-parking-operations/spec.md).

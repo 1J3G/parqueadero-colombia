@@ -1,0 +1,27 @@
+<section class="page-heading">
+  <p class="eyebrow">Solo Administrador</p>
+  <h1>Auditoría de cancelaciones</h1>
+  <p class="muted">Historial de contratos cancelados, con quién, cuándo y por qué.</p>
+</section>
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Contrato</th><th>Cliente</th><th>Placa</th><th>Administrador</th><th>Fecha</th><th>Justificación</th></tr></thead>
+      <tbody>
+        @for (item of cancellations(); track item.contract_id) {
+          <tr>
+            <td>#{{ item.contract_id }}</td>
+            <td>{{ item.customer_full_name }} · {{ item.customer_document }}</td>
+            <td>{{ item.plate }}</td>
+            <td>{{ item.administrator_document }}</td>
+            <td>{{ item.cancelled_at | date:'medium' }}</td>
+            <td>{{ item.cancellation_justification }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="muted">No hay cancelaciones registradas.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

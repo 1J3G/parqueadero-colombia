@@ -49,6 +49,8 @@ note bottom of UCEntrada
   Requiere sesion activa.
   Para Operario, requiere caja abierta a su nombre.
   Administrador puede ejecutar el transito sin caja.
+  Anti-Passback aplica al vehiculo/placa aunque se use otro contrato;
+  mientras este dentro, se muestra su celda y no se ofrece otra asignacion.
   La celda y el transito se actualizan en una transaccion.
 end note
 
@@ -218,7 +220,8 @@ note right of Transit
 end note
 
 note right of Cell
-  La entrada cambia Disponible a Ocupada.
-  La salida libera la celda de la ultima entrada.
+  La entrada cambia Libre a Ocupado.
+  La salida cambia la celda asociada a Libre.
+  La misma placa no puede ocupar otra celda antes de registrar salida.
 end note
 @enduml

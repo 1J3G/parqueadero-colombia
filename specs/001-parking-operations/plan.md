@@ -1,12 +1,12 @@
 # Implementation Plan: Gestión de operaciones del parqueadero
 
-**Branch**: `001-parking-operations` | **Date**: 2026-10-24 | **Spec**: [spec.md](./spec.md)
+**Branch**: `new-funct` | **Date**: 2026-10-30 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification for Sistema de Parqueadero "Autos Colombia".
 
 ## Summary
 
-Implementar el flujo de operaciones definido en los 28 requisitos mediante Angular Standalone, una API Python con FastAPI y MySQL local. La estructura se limita a `/frontend`, `/backend` y `/db`; la persistencia relacional y las transacciones de ingreso, salida, caja y pago mantienen las reglas de integridad del dominio. El cierre de caja registra hora de servidor sin arqueo. La tarifa neta se recibe al registrar el pago y no se administra un catálogo de tarifas.
+Implementar el flujo de operaciones definido en los 32 requisitos mediante Angular Standalone, una API Python con FastAPI y MySQL local. La estructura se limita a `/frontend`, `/backend` y `/db`; la persistencia relacional y las transacciones de ingreso, salida, caja y pago mantienen las reglas de integridad del dominio. Se agregan consulta y mantenimiento de celdas, administración de usuarios, auditoría de cancelaciones y confirmaciones de creación. El cierre de caja registra hora de servidor sin arqueo. La tarifa neta se recibe al registrar el pago y no se administra un catálogo de tarifas.
 
 ## Technical Context
 
@@ -16,7 +16,7 @@ Implementar el flujo de operaciones definido en los 28 requisitos mediante Angul
 
 **Storage**: MySQL local; esquema relacional y scripts SQL bajo `/db`.
 
-**Testing**: Validación de aceptación de API, interfaz y persistencia con datos de prueba aislados. El plan no desglosa tareas de pruebas automatizadas porque no fueron solicitadas explícitamente.
+**Testing**: Pruebas unitarias backend y frontend, compilación Angular y validación de aceptación de API, interfaz y persistencia con datos de prueba aislados. Los flujos que requieren MySQL se validan con una instancia local configurada.
 
 **Target Platform**: Aplicación web SPA en navegador y backend Python conectado a la instancia MySQL local.
 
@@ -24,9 +24,11 @@ Implementar el flujo de operaciones definido en los 28 requisitos mediante Angul
 
 **Performance Goals**: La especificación no fija latencias, concurrencia ni disponibilidad; no se inventan objetivos numéricos.
 
-**Constraints**: Reglas RN-01 a RN-18 y REQ-001 a REQ-028; estructura plana `/frontend`, `/backend`, `/db`; consultas MySQL parametrizadas; no incorporar funcionalidades no especificadas.
+**Constraints**: Reglas RN-01 a RN-20 y REQ-001 a REQ-032; estructura plana `/frontend`, `/backend`, `/db`; consultas MySQL parametrizadas; no incorporar funcionalidades no especificadas.
 
 **Scale/Scope**: Operación de parqueadero con operarios, administradores, clientes, contratos, vehículos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría. No hay volumen de datos especificado.
+
+**Access control**: Las nuevas rutas de administración de usuarios, mantenimiento de celdas y consulta de cancelaciones requieren autorización de Administrador en el servidor, además de la protección de navegación en Angular.
 
 ## Constitution Check
 
@@ -36,7 +38,7 @@ Implementar el flujo de operaciones definido en los 28 requisitos mediante Angul
 | Simplicidad, estructura plana y estilo funcional | PASS | Solo `/frontend`, `/backend` y `/db`; funciones y módulos por dominio, sin Clean Architecture ni ORM. |
 | Validación, acceso y errores | PASS | Sesión activa, rol Administrador y caja abierta se validan antes de operaciones; mensajes de usuario y estados HTTP semánticos. |
 | Desarrollo guiado por especificación | PASS | Los pasos y tareas implementan requisitos existentes y las aclaraciones registradas en `spec.md`. |
-| Dominio RN-01 a RN-18 | PASS | Unicidad, estados, acceso excepcional, Anti-Passback, inmutabilidad, celdas, ciclo de caja, comprobantes y anulaciones quedan cubiertos. |
+| Dominio RN-01 a RN-20 | PASS | Unicidad, estados, acceso excepcional, Anti-Passback, inmutabilidad, celdas, ciclo de caja, comprobantes, anulaciones y permisos administrativos quedan cubiertos. |
 | Stack objetivo | PASS | Angular Standalone, Python/FastAPI y MySQL local. FastAPI fue confirmado por el usuario; versiones no especificadas permanecen sin fijar. |
 
 ## Applied Guidelines
@@ -57,7 +59,7 @@ Implementar el flujo de operaciones definido en los 28 requisitos mediante Angul
 #### Step 1.2: Crear persistencia relacional del dominio
 
 - **Requirements**: REQ-004, REQ-005, REQ-006, REQ-011, REQ-014, REQ-015, REQ-019, REQ-023, REQ-025, REQ-027, REQ-028
-- **Design inputs**: Especificación, Key Entities y reglas RN-01 a RN-18.
+- **Design inputs**: Especificación, Key Entities y reglas RN-01 a RN-20.
 - **Description**: Definir el esquema SQL de usuarios/sesiones, clientes, vehículos, contratos, celdas, tránsitos, novedades, cajas, pagos, comprobantes y auditoría, con claves, restricciones y campos derivados únicamente de los requisitos. Añadir el acceso MySQL directo en el backend, sin ORM.
 
 ### Phase 2: User Story 1 — Autenticación y acceso operativo (P1)
@@ -108,23 +110,23 @@ Implementar el flujo de operaciones definido en los 28 requisitos mediante Angul
 
 ### Phase 4: User Story 3 — Celdas, entradas, salidas y novedades (P1)
 
-#### Step 4.1: Consultar disponibilidad y validar compatibilidad
+#### Step 4.1: Consultar disponibilidad, estado del vehículo y compatibilidad
 
-- **Requirements**: REQ-002, REQ-015, REQ-016
-- **Design inputs**: Especificación, REQ-002, REQ-015 y REQ-016; Constitución RN-09.
-- **Description**: Exponer disponibilidad a usuarios autenticados y seleccionar solo celdas disponibles cuya categoría sea compatible: Carro↔Carro/Discapacitado, Moto↔Moto y Camioneta↔Camioneta.
+- **Requirements**: REQ-002, REQ-009, REQ-015, REQ-016
+- **Design inputs**: Especificación, REQ-002, REQ-009, REQ-015 y REQ-016; Constitución RN-05 y RN-09.
+- **Description**: Exponer el estado de las celdas y el estado dentro/fuera de cada vehículo a usuarios autenticados; seleccionar únicamente celdas Libre compatibles y no ofrecer asignación cuando la placa ya tenga una entrada sin salida.
 
 #### Step 4.2: Aplicar reglas de ingreso, excepción y Anti-Passback
 
 - **Requirements**: REQ-008, REQ-009, REQ-010
 - **Design inputs**: Especificación, REQ-008 a REQ-010 y aclaración sobre Cancelado; Constitución RN-03, RN-05 y RN-06.
-- **Description**: Rechazar el ingreso si el contrato no satisface estado y fecha de vigencia, salvo autorización explícita de Administrador más novedad para los estados Vencido, Pendiente de Pago o Cancelado. Rechazar entradas duplicadas y salidas sin vehículo dentro.
+- **Description**: Rechazar el ingreso si el contrato no satisface estado y fecha de vigencia, salvo autorización explícita de Administrador más novedad para los estados Vencido, Pendiente de Pago o Cancelado. Bloquear en interfaz y API una segunda entrada para el mismo vehículo/placa aunque se use otro contrato, y rechazar salidas sin vehículo dentro.
 
 #### Step 4.3: Persistir tránsitos y ocupación de celdas
 
 - **Requirements**: REQ-011, REQ-012, REQ-017, REQ-018
 - **Design inputs**: Especificación, REQ-011, REQ-012, REQ-017 y REQ-018; Constitución RN-07, RN-10 y RN-11.
-- **Description**: Confirmar entrada, asignar celda y registrar tránsito de manera atómica. Registrar salida inmutable y liberar de inmediato la celda. Ninguna operación de edición o eliminación debe estar expuesta.
+- **Description**: Confirmar entrada, asignar celda y registrar tránsito de manera atómica, cambiando la celda de Libre a Ocupado. Registrar salida inmutable y liberar de inmediato la celda como Libre. Ninguna operación de edición o eliminación debe estar expuesta.
 
 #### Step 4.4: Registrar daños y accesos excepcionales
 
@@ -158,6 +160,32 @@ Implementar el flujo de operaciones definido en los 28 requisitos mediante Angul
 - **Design inputs**: Especificación, REQ-024 y REQ-025; Constitución RN-16.
 - **Description**: Denegar borrado/anulación por operarios. Para Administrador, solicitar credenciales de confirmación y justificación, conservar el pago y registrar la anulación en auditoría.
 
+### Phase 6: User Stories 5–8 — Celdas, usuarios, auditoría y confirmaciones
+
+#### Step 6.1: Consultar ocupación y administrar mantenimiento de celdas
+
+- **Requirements**: REQ-029
+- **Design inputs**: Estados de celda y permisos de Administrador acordados en `spec.md`.
+- **Description**: Mostrar estados Libre, Ocupado y En mantenimiento junto con la placa del vehículo estacionado. Solo Administradores pueden cambiar mantenimiento de celdas no ocupadas; las entradas/salidas realizan las transiciones de ocupación.
+
+#### Step 6.2: Crear y consultar cuentas de usuario
+
+- **Requirements**: REQ-030
+- **Design inputs**: `spec.md`, historias de usuario 6 y RNF-002/RNF-003.
+- **Description**: Proveer consulta y alta de cuentas protegidas por rol Administrador. Guardar la contraseña inicial usando el hash de contraseñas existente y no incluir credenciales en las respuestas.
+
+#### Step 6.3: Consultar auditoría de cancelaciones
+
+- **Requirements**: REQ-031
+- **Design inputs**: Campos de cancelación ya persistidos en `contracts` y criterios de aceptación de la historia 7.
+- **Description**: Exponer una lista ordenada de cancelaciones con contrato, cliente, placa, Administrador, fecha y justificación; proteger el endpoint con autorización de servidor.
+
+#### Step 6.4: Confirmar operaciones de creación
+
+- **Requirements**: REQ-032
+- **Design inputs**: Criterios de aceptación de la historia 8.
+- **Description**: Mostrar un mensaje global de éxito ante una respuesta de creación HTTP 201 y no mostrarlo ante respuestas fallidas.
+
 ## Project Structure
 
 ```text
@@ -167,9 +195,11 @@ frontend/
     └── features/
         ├── auth/              # Inicio de sesión
         ├── cash/              # Apertura de caja
-        ├── contracts/         # Clientes, vehículos y mensualidades
+        ├── cells/             # Consulta de estados y mantenimiento
+        ├── contracts/         # Clientes, vehículos, mensualidades y auditoría
         ├── parking/           # Disponibilidad, entradas, salidas y novedades
-        └── payments/          # Caja, pagos, comprobantes y anulaciones
+        ├── payments/          # Caja, pagos, comprobantes y anulaciones
+        └── users/             # Administración de cuentas
 
 backend/
 └── app/
@@ -177,6 +207,7 @@ backend/
     ├── database.py            # Conexión/transacciones MySQL
     ├── auth.py                # Sesión y permisos
     ├── routes/                # Rutas por dominio
+    │   └── users.py           # Administración de usuarios
     ├── contracts.py           # Reglas contractuales
     ├── vehicles.py            # Validaciones de vehículo/placa
     ├── cells.py               # Disponibilidad y compatibilidad
@@ -202,10 +233,15 @@ db/
   3. Consultar celdas y registrar entradas/salidas válidas, rechazando incompatibilidad, vigencia incorrecta y Anti-Passback.
   4. Registrar novedad física y acceso excepcional autorizado, dejando los tránsitos inmutables.
   5. Abrir caja, pagar mensualidad, emitir comprobante y restringir anulaciones a Administrador.
+  6. Consultar estados de celdas, impedir mantenimiento en ocupadas y reservar la gestión al Administrador.
+  7. Crear usuarios como Administrador y comprobar que las credenciales no se exponen.
+  8. Consultar cancelaciones como Administrador y comprobar la denegación para Operario.
+  9. Verificar mensajes de éxito para creaciones y ausencia del mensaje ante errores.
+  10. Mantener un vehículo dentro, seleccionar su contrato (o un contrato asociado a la misma placa) y comprobar que la UI no ofrece otra celda y que la API rechaza una entrada repetida.
 - **primaryValidationStack**: Validación de rutas y flujos de Angular/FastAPI contra MySQL local.
 - **fallbackMatrix**: `infra-tier`: MySQL local requerido; si no está disponible, las pruebas de persistencia no pueden considerarse aprobadas. `browser-tier`: navegador manual para aceptación visual; no se agrega automatización de navegador en este plan.
 - **Environment requirements**: Python compatible con FastAPI, Node.js compatible con Angular y MySQL local.
-- **knownGaps**: No se definieron objetivos de carga/disponibilidad ni volumen; la validación no cubrirá esos ejes. Sin automatización de navegador, la aceptación visual es manual.
+- **knownGaps**: No se definieron objetivos de carga/disponibilidad ni volumen; la validación no cubrirá esos ejes. La aceptación visual final es manual.
 - **Test data strategy**: Usar registros de prueba separados por ejecución y documentos/placas no compartidos; limpiar solo datos de prueba, nunca registros de auditoría de producción.
 - **Acceptance criteria**: Cada viaje crítico satisface sus escenarios Given-When-Then en la especificación; las operaciones inválidas son rechazadas y no dejan cambios parciales.
 - **Validation review expectations**: Confirmar la correspondencia de cada requisito con implementación observable y verificar las restricciones de inmutabilidad, atomicidad, permisos y trazabilidad.
@@ -221,17 +257,17 @@ db/
 | REQ-005 | Un contrato vincula un vehículo por placa | 1.2, 3.1 | `db/schema.sql`, `backend/app/vehicles.py` |
 | REQ-006 | Estados válidos, vencimiento automático y cancelación administrativa justificada | 1.2, 3.2 | `db/schema.sql`, `db/migrations/001_contract_status_lifecycle.sql`, `backend/app/contracts.py`, `backend/app/routes/contracts.py`, `frontend/src/app/features/contracts/` |
 | REQ-007 | Cambio de placa autorizado por Administrador | 3.3 | `backend/app/contracts.py`, `backend/app/routes/contracts.py` |
-| REQ-008 | Entrada activa y dentro de vigencia | 4.2 | `backend/app/transits.py` |
-| REQ-009 | Anti-Passback para entradas y salidas | 4.2 | `backend/app/transits.py` |
-| REQ-010 | Acceso excepcional a contratos no vigentes/cancelados | 4.2, 4.4 | `backend/app/transits.py`, `backend/app/novelties.py` |
-| REQ-011 | Tránsito con hora servidor, operario y celda | 1.2, 4.3 | `db/schema.sql`, `backend/app/transits.py` |
+| REQ-008 | Entrada activa y dentro de vigencia | 4.2 | `backend/app/domain.py`, `backend/app/routes/transits.py` |
+| REQ-009 | Anti-Passback para la misma placa, con celda ocupada visible y sin segunda asignación | 4.1, 4.2 | `backend/app/routes/contracts.py`, `backend/app/routes/transits.py`, `frontend/src/app/features/parking/` |
+| REQ-010 | Acceso excepcional a contratos no vigentes/cancelados | 4.2, 4.4 | `backend/app/domain.py`, `backend/app/routes/transits.py`, `backend/app/novelties.py` |
+| REQ-011 | Tránsito con hora servidor, operario y celda | 1.2, 4.3 | `db/schema.sql`, `backend/app/routes/transits.py` |
 | REQ-012 | Prohibir edición y eliminación de tránsitos | 4.3 | `backend/app/routes/transits.py` |
 | REQ-013 | Documentar daños preexistentes | 4.4 | `backend/app/novelties.py`, `frontend/src/app/features/parking/` |
 | REQ-014 | Severidad y vínculo inmutable de novedades físicas | 1.2, 4.4 | `db/schema.sql`, `backend/app/novelties.py` |
 | REQ-015 | Categorías fijas de celdas | 1.2, 4.1 | `db/schema.sql`, `backend/app/cells.py` |
 | REQ-016 | Compatibilidad estricta vehículo-celda | 4.1 | `backend/app/cells.py` |
-| REQ-017 | Ocupar celda atómicamente al confirmar entrada | 4.2, 4.3 | `backend/app/transits.py`, `backend/app/database.py` |
-| REQ-018 | Liberar celda inmediatamente al procesar salida | 4.3 | `backend/app/transits.py`, `backend/app/routes/transits.py` |
+| REQ-017 | Ocupar celda atómicamente al confirmar entrada | 4.2, 4.3 | `backend/app/routes/transits.py`, `backend/app/database.py` |
+| REQ-018 | Liberar celda inmediatamente al procesar salida | 4.3 | `backend/app/routes/transits.py` |
 | REQ-019 | Apertura de caja con base antes del cobro | 1.2, 2.3 | `db/schema.sql`, `backend/app/cash.py`, `frontend/src/app/features/cash/cash-open.component.ts` |
 | REQ-020 | Activar contrato y extender vigencia según meses pagados | 3.2, 5.2 | `backend/app/contracts.py`, `backend/app/payments.py` |
 | REQ-021 | Registrar método de pago permitido | 5.2 | `backend/app/payments.py` |
@@ -242,3 +278,7 @@ db/
 | REQ-026 | Validar formatos colombianos de placas | 3.1 | `backend/app/vehicles.py` |
 | REQ-027 | Asociar pago al operario de la caja abierta | 1.2, 5.1 | `db/schema.sql`, `backend/app/payments.py` |
 | REQ-028 | Cerrar caja por titular o Administrador con hora del servidor y sin monto final | 1.2, 2.3, 5.1 | `db/schema.sql`, `backend/app/cash.py`, `backend/app/routes/cash.py`, `frontend/src/app/features/cash/cash-open.component.ts` |
+| REQ-029 | Consultar estados de celdas y administrar mantenimiento solo para celdas no ocupadas | 6.1 | `db/schema.sql`, `db/migrations/002_cell_status_maintenance.sql`, `backend/app/routes/cells.py`, `frontend/src/app/features/cells/` |
+| REQ-030 | Crear y consultar usuarios solo como Administrador, sin exponer hashes | 6.2 | `backend/app/routes/users.py`, `backend/app/auth.py`, `frontend/src/app/features/users/` |
+| REQ-031 | Consultar la auditoría de cancelaciones solo como Administrador | 6.3 | `backend/app/routes/contracts.py`, `frontend/src/app/features/contracts/contract-audit.component.*` |
+| REQ-032 | Confirmar visualmente creaciones exitosas | 6.4 | `frontend/src/app/core/api-success.service.ts`, `frontend/src/app/core/api-error.interceptor.ts`, `frontend/src/app/app.html` |

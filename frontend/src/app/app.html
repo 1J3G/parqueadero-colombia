@@ -8,7 +8,12 @@
       <a routerLink="/cash" routerLinkActive="active">Caja</a>
       <a routerLink="/contracts" routerLinkActive="active">Clientes y contratos</a>
       <a routerLink="/parking" routerLinkActive="active">Entradas y salidas</a>
+      <a routerLink="/cells" routerLinkActive="active">Celdas</a>
       <a routerLink="/payments" routerLinkActive="active">Pagos</a>
+      @if (user.role === 'Administrador') {
+        <a routerLink="/users" routerLinkActive="active">Usuarios</a>
+        <a routerLink="/contract-audit" routerLinkActive="active">Auditoría de contratos</a>
+      }
     </nav>
     <div class="user-menu">
       <span>{{ user.document }} <small>{{ user.role }}</small></span>
@@ -22,6 +27,12 @@
     <div class="error-banner" role="alert">
       <span>{{ errors.message() }}</span>
       <button type="button" aria-label="Cerrar mensaje" (click)="errors.clear()">×</button>
+    </div>
+  }
+  @if (successes.message()) {
+    <div class="success-banner" role="status">
+      <span>{{ successes.message() }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="successes.clear()">×</button>
     </div>
   }
   <router-outlet />

@@ -6,6 +6,13 @@ Sync Impact Report
 - Version change: 2.4.0 → 2.5.0
 - Modified rules: RN-02 now defines automatic persisted expiration and
   Administrator-only cancellation with mandatory justification.
+- Version change: 2.5.0 → 2.6.0
+- Modified rules: RN-10 and RN-11 define the Libre/Ocupado/En mantenimiento
+  states and administrative maintenance transitions; RN-19 and RN-20 define
+  Administrator-only user creation and cancellation-audit access.
+- Version change: 2.6.0 → 2.6.1
+- Modified rules: RN-05 explicitly prevents a vehicle/plate already inside
+  from being assigned another cell or entering again.
 - Templates: No changes required.
 - Follow-up TODOs: Ninguno.
 -->
@@ -22,7 +29,7 @@ especificado por el usuario.
 ## Core Principles
 
 ### I. Reglas de Dominio como Fuente de Verdad
-Las reglas RN-01 a RN-18 de esta constitución son obligatorias para el diseño
+Las reglas RN-01 a RN-20 de esta constitución son obligatorias para el diseño
 de arquitectura, base de datos, lógica del backend, validaciones y casos de uso.
 La especificación del producto (`spec.md`) debe documentar el comportamiento
 que se construirá y no puede contradecir estas reglas. No se permite código
@@ -47,7 +54,7 @@ innecesaria sin apartarse de los requisitos documentados.
 
 ### III. Validación, Acceso y Manejo de Errores
 La aplicación debe autenticar a los usuarios que la operan. Los permisos
-administrativos requeridos por RN-06 y RN-16 se comprobarán antes de autorizar
+administrativos requeridos por RN-06, RN-16, RN-19 y RN-20 se comprobarán antes de autorizar
 esas operaciones. La interfaz nunca expondrá errores técnicos crudos ni
 stack traces: los traducirá a mensajes comprensibles para el usuario. El backend
 retornará códigos HTTP semánticos, incluyendo 400 para peticiones inválidas,
@@ -104,9 +111,11 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 
 ### Módulo 2: Entrada, Salida y Novedades de Vehículos
 
-- **RN-05 (Anti-passback)**: Un vehículo cuyo estado sea Dentro del Parqueadero
-  no puede registrar otra entrada. Un vehículo cuyo estado sea Fuera del
-  Parqueadero no puede registrar una salida.
+- **RN-05 (Anti-passback)**: Un vehículo cuya placa ya ocupa una celda dentro
+  del parqueadero no puede seleccionar otra celda ni registrar otra entrada,
+  incluso mediante otro contrato asociado al mismo vehículo. La interfaz
+  muestra la celda ocupada y el backend rechaza cualquier repetición. Un
+  vehículo cuyo estado sea Fuera del Parqueadero no puede registrar una salida.
 - **RN-06 (Bloqueo contractual)**: Si al momento del ingreso el contrato está
   Vencido, Pendiente de Pago o Cancelado, se bloquea la apertura de talanquera
   o el registro. El acceso excepcional requiere autorización explícita de un
@@ -126,12 +135,15 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
   fija: Carro, Moto, Camioneta o Discapacitado. La asignación exige
   compatibilidad estricta: Carro con Carro, Moto con Moto, Camioneta con
   Camioneta y únicamente vehículos Carro con celdas Discapacitado.
-- **RN-10 (Ocupación exclusiva)**: Una celda Ocupada no puede asignarse a otro
-  vehículo. Al confirmar una entrada, el estado de la celda asignada cambia
-  atómicamente de Disponible a Ocupada.
+- **RN-10 (Estados y ocupación de celdas)**: Cada celda tiene uno de estos
+  estados: Libre, Ocupado o En mantenimiento. Una celda Ocupada no puede
+  asignarse a otro vehículo ni cambiar manualmente de estado. Al confirmar una
+  entrada, la celda asignada cambia atómicamente de Libre a Ocupado; las celdas
+  En mantenimiento no están disponibles para entradas. Solo un Administrador
+  puede cambiar una celda no ocupada entre Libre y En mantenimiento.
 - **RN-11 (Liberación automatizada)**: Al confirmar la salida del vehículo, el
-  estado de su celda asociada cambia de inmediato y automáticamente a
-  Disponible.
+  estado de su celda asociada cambia de inmediato y automáticamente de
+  Ocupado a Libre.
 
 ### Módulo 4: Gestión de Pagos
 
@@ -168,6 +180,12 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 - **RN-18 (Cambio de vehículo contractual)**: Solo un usuario con rol
   Administrador puede autorizar la modificación de la placa asociada a un
   contrato existente.
+- **RN-19 (Administración de usuarios)**: Solo un Administrador puede crear
+  usuarios con documento único y rol Operario o Administrador. Las contraseñas
+  se almacenan como hash y nunca se exponen en consultas.
+- **RN-20 (Auditoría de cancelaciones)**: Solo un Administrador puede consultar
+  el historial de cancelaciones de contratos, que debe mostrar contrato,
+  cliente, placa, Administrador que canceló, fecha y justificación.
 
 ## Manejo de Errores y Validaciones
 
@@ -193,7 +211,7 @@ La versión sigue semver:
 - **PATCH**: aclaraciones y correcciones que no cambian el significado.
 
 Cada revisión de especificación, plan o implementación debe comprobar su
-conformidad con las reglas RN-01 a RN-18, el stack, las restricciones de
+conformidad con las reglas RN-01 a RN-20, el stack, las restricciones de
 estructura y el proceso de desarrollo guiado por especificación.
 
-**Versión**: 2.5.0 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-24
+**Versión**: 2.6.1 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-31
