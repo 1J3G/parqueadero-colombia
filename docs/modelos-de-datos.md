@@ -37,7 +37,7 @@ Este documento presenta el modelo entidad-relación (MER), el modelo relacional 
 erDiagram
     USUARIO ||--o{ SESION : "inicia"
     CLIENTE ||--o{ CONTRATO : "suscribe"
-    VEHICULO ||--o| CONTRATO : "se_asocia"
+    VEHICULO ||--o{ CONTRATO : "se_asocia"
     USUARIO o|--o{ CONTRATO : "cancela"
     USUARIO ||--o{ CAJA : "abre"
     VEHICULO ||--o{ TRANSITO : "registra"
