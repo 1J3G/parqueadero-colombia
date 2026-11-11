@@ -65,7 +65,7 @@ def register_entry(payload: EntryRequest, operator: dict = Depends(get_current_u
         mark_expired_contracts(cursor)
         cursor.execute(
             """
-            SELECT c.id AS contract_id, c.status, c.expires_on, v.id AS vehicle_id,
+            SELECT c.id AS contract_id, c.status, c.starts_on, c.expires_on, v.id AS vehicle_id,
                    v.vehicle_type
             FROM contracts c
             JOIN vehicles v ON v.id = c.vehicle_id
@@ -84,7 +84,13 @@ def register_entry(payload: EntryRequest, operator: dict = Depends(get_current_u
         cursor.execute("SELECT CURRENT_DATE() AS server_date")
         server_date: date = cursor.fetchone()["server_date"]
         exceptional = payload.exceptional_authorization is not None
-        require_entry_permission(contract["status"], contract["expires_on"], server_date, exceptional)
+        require_entry_permission(
+            contract["status"],
+            contract["starts_on"],
+            contract["expires_on"],
+            server_date,
+            exceptional,
+        )
 
         admin_id = None
         if exceptional:

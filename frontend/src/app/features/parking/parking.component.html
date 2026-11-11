@@ -14,13 +14,23 @@
   </label>
   @if (selectedContract(); as contract) {
     <p class="muted">
-      {{ contract.vehicle_type }} · Vence: {{ contract.expires_on ?? 'Sin pago registrado' }}
+      {{ contract.vehicle_type }} ·
+      @if (contract.starts_on) {
+        Vigencia: {{ contract.starts_on | date:'mediumDate' }} – {{ contract.expires_on | date:'mediumDate' }}
+      } @else {
+        Sin pago registrado
+      }
     </p>
     <div class="columns">
       @if (contract.vehicle_inside) {
         <div class="notice" role="status">
           <h2>Vehículo dentro del parqueadero</h2>
           <p>La placa {{ contract.plate }} ya ocupa la celda {{ contract.occupied_cell_label }}. Registre la salida antes de volver a asignar una celda.</p>
+        </div>
+      } @else if (isBeforeStart(contract.starts_on)) {
+        <div class="notice" role="status">
+          <h2>Contrato aún no vigente</h2>
+          <p>Este período comienza el {{ contract.starts_on | date:'mediumDate' }}.</p>
         </div>
       } @else {
         <form class="form-grid" (ngSubmit)="registerEntry()">

@@ -92,7 +92,7 @@
 ### Implementation
 
 - [x] T025 [US4] [Plan:5.1] Asociar cada pago al Operario que abrió la caja vigente y exigir caja abierta en `backend/app/payments.py` y `backend/app/routes/payments.py`.
-- [x] T026 [US4] [Plan:3.2,5.2] Implementar métodos Efectivo/Transferencia Bancaria/Tarjeta, referencia obligatoria para transferencia y activación/prórroga del contrato desde la fecha base definida en `backend/app/payments.py`.
+- [x] T026 [US4] [Plan:3.2,5.2] Implementar métodos Efectivo/Transferencia Bancaria/Tarjeta, referencia obligatoria para transferencia y activación/prórroga del contrato; T052 completa la secuenciación entre contratos del mismo cliente y vehículo en `backend/app/payments.py`.
 - [x] T027 [US4] [Plan:5.3] Generar comprobante de numeración consecutiva única con valor neto recibido al pago, IVA del 19% y datos del cliente en `backend/app/receipts.py`.
 - [x] T028 [US4] [Plan:5.4] Impedir anulaciones/eliminaciones por Operarios y permitir anulaciones de Administrador con credenciales de confirmación, justificación obligatoria y bitácora en `backend/app/payments.py` y `backend/app/routes/payments.py`.
 - [x] T029 [US4] [Plan:5.1,5.2,5.3] Crear interfaz Angular para cobro con método, referencia de transferencia y presentación del comprobante en `frontend/src/app/features/payments/`.
@@ -202,3 +202,9 @@
 - [ ] T049 [Plan:7.2] Definir el entorno de despliegue y monitorización, y reunir evidencia de disponibilidad mensual mínima del 99,5 % (RNF-004).
 - [ ] T050 [Plan:7.2] Automatizar copias de seguridad diarias y ensayar restauración en el entorno acordado, demostrando recuperación en un máximo de 4 horas (RNF-005).
 - [ ] T051 [Plan:7.3] Ejecutar una prueba cronometrada con un operario capacitado para comprobar que una entrada/salida habitual toma como máximo 3 minutos y documentar el resultado (RNF-008).
+
+## Phase 12: Secuenciar vigencias de contratos
+
+- [x] T052 [Plan:3.2,4.2,5.2] Persistir `starts_on`, crear la migración 003, serializar pagos por vehículo, programar los meses desde el vencimiento Activo más lejano del mismo cliente/vehículo, rechazar entradas antes del inicio, actualizar las vistas y sincronizar la especificación, constitución, guía de datos y diagramas.
+
+**Checkpoint**: Los pagos anticipados producen períodos consecutivos por cliente y vehículo; contratos de otra titularidad o placa no alteran la secuencia, y un contrato programado no permite entradas antes de `starts_on`.

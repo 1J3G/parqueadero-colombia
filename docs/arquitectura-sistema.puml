@@ -97,6 +97,7 @@ class "Contract\ncontracts" as Contract {
   customer_id : BIGINT FK
   vehicle_id : BIGINT FK
   status : ENUM(Pendiente de Pago, Activo, Vencido, Cancelado)
+  starts_on : DATE?
   expires_on : DATE?
   cancelled_by : BIGINT FK?
   cancellation_justification : VARCHAR(1000)?
@@ -237,7 +238,12 @@ DB --> Auth : Usuario autenticado
 Auth --> API : Operario
 API -> DB : Iniciar transacción
 API -> Payments : Validar caja y registrar pago
-Payments -> DB : Bloquear contrato y caja\nCalcular impuesto y vencimiento
+Payments -> DB : Bloquear contrato y vehículo\nBuscar vencimiento Activo más lejano
+DB -> MySQL : SELECT ... FOR UPDATE\nSELECT MAX(expires_on) por cliente y vehículo
+MySQL --> DB : Datos del contrato y vencimiento base
+DB --> Payments : Fechas existentes del contrato
+Payments -> Payments : Calcular inicio y vencimiento\nsecuencial del período
+Payments -> DB : Calcular impuesto y persistir período
 Payments -> MySQL : INSERT payment\nUPDATE contract
 Payments -> MySQL : Bloquear e incrementar\nreceipt_counters
 Payments -> MySQL : INSERT receipt

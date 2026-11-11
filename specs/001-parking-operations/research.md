@@ -1,6 +1,6 @@
 # Research: Gestión de operaciones del parqueadero
 
-**Fecha de actualización**: 2026-10-31
+**Fecha de actualización**: 2026-11-11
 **Especificación**: [spec.md](./spec.md)
 
 ## Decisiones
@@ -26,7 +26,9 @@
 ## Decisiones de negocio ya resueltas en `spec.md`
 
 - Contrato Cancelado: acceso excepcional solo con autorización administrativa y novedad; pago de mensualidad no reactiva ese contrato, se crea uno nuevo.
-- Renovación: meses contados desde vencimiento vigente; contrato vencido o nuevo, desde la fecha del pago.
+- Vigencias: el vencimiento base es el más lejano entre contratos Activos no vencidos del mismo cliente y vehículo (incluido el contrato pagado cuando corresponda). La renovación de un contrato ya vigente conserva su fecha de inicio; uno nuevo o vencido inicia al día siguiente al vencimiento base. Si no hay vencimiento vigente, inicia el día del pago. Los contratos Cancelados, vencidos, de otro cliente o de otro vehículo no afectan la secuencia.
+- Período futuro: se persiste `starts_on` además de `expires_on`; un contrato pagado por anticipado no permite entradas hasta `starts_on`. Los pagos del mismo vehículo bloquean su fila antes de consultar vencimientos, serializando la asignación del siguiente período sin bloquear pagos de otros vehículos.
+- Persistencia: `starts_on` se agrega mediante una migración aditiva; no se modifica la cardinalidad entre clientes, vehículos y contratos.
 - Tarifa neta: provista al cobrar y fijada fuera del sistema; no habrá catálogo de tarifas.
 - Estado de celdas: se usan Libre, Ocupado y En mantenimiento; entradas y salidas cambian automáticamente Libre/Ocupado y solo Administradores pueden cambiar mantenimiento sobre una celda no ocupada.
 - Cuentas: un Administrador crea usuarios, define su contraseña inicial y el backend reutiliza el hash PBKDF2 del inicio de sesión; las respuestas de listado no incluyen hashes.

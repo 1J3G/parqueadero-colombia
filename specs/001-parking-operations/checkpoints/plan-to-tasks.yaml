@@ -122,8 +122,8 @@ upstream_trace:
     full_trace: "REQ-004,REQ-005,REQ-026 -> Step 3.1 -> T014,T015,T018"
   - plan_item: "3.2"
     source_requirements: ["REQ-006", "REQ-020"]
-    tasks: ["T016", "T018", "T026", "T031"]
-    full_trace: "REQ-006,REQ-020 -> Step 3.2 -> T016,T018,T026,T031"
+    tasks: ["T016", "T018", "T026", "T031", "T052"]
+    full_trace: "REQ-006,REQ-020 -> Step 3.2 -> T016,T018,T026,T031,T052"
   - plan_item: "3.3"
     source_requirements: ["REQ-007"]
     tasks: ["T017", "T018"]
@@ -133,9 +133,9 @@ upstream_trace:
     tasks: ["T019", "T024", "T043", "T044", "T045"]
     full_trace: "REQ-002,REQ-009,REQ-015,REQ-016 -> Step 4.1 -> T019,T024,T043,T044,T045"
   - plan_item: "4.2"
-    source_requirements: ["REQ-008", "REQ-009", "REQ-010"]
-    tasks: ["T020", "T021", "T024", "T043", "T044", "T045"]
-    full_trace: "REQ-008,REQ-009,REQ-010 -> Step 4.2 -> T020,T021,T024,T043,T044,T045"
+    source_requirements: ["REQ-008", "REQ-009", "REQ-010", "REQ-020"]
+    tasks: ["T020", "T021", "T024", "T043", "T044", "T045", "T052"]
+    full_trace: "REQ-008,REQ-009,REQ-010,REQ-020 -> Step 4.2 -> T020,T021,T024,T043,T044,T045,T052"
   - plan_item: "4.3"
     source_requirements: ["REQ-009", "REQ-011", "REQ-012", "REQ-017", "REQ-018", "RNF-006"]
     tasks: ["T021", "T022", "T046"]
@@ -150,8 +150,8 @@ upstream_trace:
     full_trace: "REQ-003,REQ-027,REQ-028 -> Step 5.1 -> T012,T025"
   - plan_item: "5.2"
     source_requirements: ["REQ-020", "REQ-021", "REQ-022"]
-    tasks: ["T026", "T029"]
-    full_trace: "REQ-020,REQ-021,REQ-022 -> Step 5.2 -> T026,T029"
+    tasks: ["T026", "T029", "T052"]
+    full_trace: "REQ-020,REQ-021,REQ-022 -> Step 5.2 -> T026,T029,T052"
   - plan_item: "5.3"
     source_requirements: ["REQ-023"]
     tasks: ["T027", "T029", "T032"]

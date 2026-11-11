@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -7,6 +8,7 @@ interface ParkingContract {
   plate: string;
   vehicle_type: string;
   status: string;
+  starts_on: string | null;
   expires_on: string | null;
   customer_full_name: string;
   vehicle_inside: boolean;
@@ -23,7 +25,7 @@ interface ParkingCell {
 @Component({
   selector: 'app-parking',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, DatePipe],
   templateUrl: './parking.component.html',
 })
 export class ParkingComponent implements OnInit {
@@ -44,6 +46,19 @@ export class ParkingComponent implements OnInit {
     () => this.contracts().find((contract) => contract.id === this.contractId()) ?? null,
   );
 
+  isBeforeStart(startsOn: string | null): boolean {
+    if (!startsOn) {
+      return false;
+    }
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+    return startsOn > today;
+  }
+
   setCellId(value: string | number | null): void {
     this.cellId.set(value === null || value === '' ? null : Number(value));
   }
@@ -59,7 +74,7 @@ export class ParkingComponent implements OnInit {
     this.contractId.set(contractId);
     this.cellId.set(null);
     const contract = this.contracts().find((item) => item.id === contractId);
-    if (contract && !contract.vehicle_inside) {
+    if (contract && !contract.vehicle_inside && !this.isBeforeStart(contract.starts_on)) {
       this.http
         .get<ParkingCell[]>(`/api/cells?vehicle_type=${encodeURIComponent(contract.vehicle_type)}`)
         .subscribe({ next: (cells) => this.cells.set(cells) });
@@ -71,7 +86,12 @@ export class ParkingComponent implements OnInit {
   registerEntry(): void {
     const selectedContract = this.selectedContract();
     const cellId = this.cellId();
-    if (!selectedContract || selectedContract.vehicle_inside || cellId === null) {
+    if (
+      !selectedContract ||
+      selectedContract.vehicle_inside ||
+      this.isBeforeStart(selectedContract.starts_on) ||
+      cellId === null
+    ) {
       return;
     }
     const damageDescription = this.damageDescription().trim();

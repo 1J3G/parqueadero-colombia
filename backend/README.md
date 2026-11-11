@@ -15,6 +15,7 @@ For an existing database created from an earlier schema, apply migrations in ord
 ```powershell
 Get-Content ..\db\migrations\001_contract_status_lifecycle.sql | mysql -u root -p
 Get-Content ..\db\migrations\002_cell_status_maintenance.sql | mysql -u root -p
+Get-Content ..\db\migrations\003_contract_service_start.sql | mysql -u root -p
 ```
 
 Do not run the migrations on a new database created from the current `schema.sql`.
@@ -51,7 +52,9 @@ Add the parkadero's real cells to the `cells` table. The application does not in
 - Payments: `POST /api/payments`, `POST /api/payments/{id}/void` (Administrator)
 - Receipts: `GET /api/receipts/{payment_id}`
 
-The contract listing includes each vehicle's current inside/outside state and occupied cell. A vehicle can be referenced by multiple contracts, but all share one occupancy state. Entry and exit lock that vehicle row and apply Anti-Passback across its contracts. After a successful exit, an Active, unexpired contract can register a new entry in another compatible free cell. These transitions need no migration.
+The contract listing includes each vehicle's current inside/outside state and occupied cell. A vehicle can be referenced by multiple contracts, but all share one occupancy state. Entry and exit lock that vehicle row and apply Anti-Passback across its contracts. After a successful exit, an Active contract within its start/end dates can register a new entry in another compatible free cell.
+
+Payments sequence validity periods by customer and vehicle. If another contract for that same customer and vehicle is Active through November 30 and one month is paid on November 11, the new period starts December 1 and expires December 30. Payments lock the vehicle row while choosing the latest unexpired contract date; entry is rejected until the selected contract's `starts_on`. New installations get this field from `db/schema.sql`; existing installations apply migration `003_contract_service_start.sql` after migrations 001 and 002.
 
 ## Verification
 

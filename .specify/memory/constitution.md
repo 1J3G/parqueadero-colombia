@@ -16,6 +16,9 @@ Sync Impact Report
 - Version change: 2.6.1 → 2.6.2
 - Modified rules: RN-04 clarifies that each contract references one vehicle,
   while the schema may retain multiple contracts for that vehicle.
+- Version change: 2.6.2 → 2.7.0
+- Modified rules: RN-03 requires entry to be within the persisted start/end
+  dates; RN-12 sequences prepaid periods for the same customer and vehicle.
 - Templates: No changes required.
 - Follow-up TODOs: Ninguno.
 -->
@@ -105,8 +108,8 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
   Vencido al detectarlo durante una consulta u operación. Solo un Administrador
   puede cancelar un contrato y debe proporcionar una justificación obligatoria.
 - **RN-03 (Vigencia contractual)**: El ingreso automatizado solo se permite si
-  el contrato asociado está Activo y la fecha actual es menor o igual a su
-  fecha de finalización.
+  el contrato asociado está Activo y la fecha del servidor es mayor o igual a
+  su fecha de inicio (cuando exista) y menor o igual a su fecha de finalización.
 - **RN-04 (Vehículo asociado a mensualidad)**: Cada contrato estándar da
   derecho de parqueo a un solo vehículo, identificado por una placa única. La
   asociación no implica que el vehículo solo pueda tener un contrato
@@ -156,8 +159,14 @@ Estas reglas son la fuente única de verdad para el comportamiento del sistema.
 
 - **RN-12 (Activación por pago)**: El registro exitoso del pago de una
   mensualidad nueva o renovación, siempre que el contrato no esté Cancelado,
-  cambia inmediatamente el contrato a Activo y extiende la fecha de
-  vencimiento según los meses pagados, desbloqueando el acceso del vehículo.
+  cambia el contrato a Activo y persiste el inicio y vencimiento de su período.
+  La fecha de vencimiento base es la más lejana entre los vencimientos de
+  contratos Activos no vencidos del mismo cliente y vehículo, incluido el
+  contrato pagado si cumple esas condiciones. Una renovación del mismo período conserva su fecha de inicio; un
+  contrato nuevo o vencido se programa para el día siguiente al vencimiento
+  base. Si no existe uno, inicia el día del pago. Un período con
+  fecha de inicio futura no habilita entradas antes de esa fecha. Los pagos
+  concurrentes del mismo vehículo serializan el cálculo de vencimientos.
 - **RN-13 (Integridad de recaudo y ciclo de caja)**: Un operario solo puede
   procesar transacciones si tiene una caja abierta a su nombre. Todo pago
   recibido se asocia al ID del operario que abrió el turno de caja vigente. No
@@ -221,4 +230,4 @@ Cada revisión de especificación, plan o implementación debe comprobar su
 conformidad con las reglas RN-01 a RN-20, el stack, las restricciones de
 estructura y el proceso de desarrollo guiado por especificación.
 
-**Versión**: 2.6.2 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-10-31
+**Versión**: 2.7.0 | **Ratificada**: 2025-10-24 | **Última enmienda**: 2026-11-11

@@ -161,6 +161,7 @@ class AdministrativeFeaturesTest(unittest.TestCase):
             {
                 "contract_id": 5,
                 "status": "Activo",
+                "starts_on": date.today(),
                 "expires_on": date.today(),
                 "vehicle_id": 10,
                 "vehicle_type": "Carro",
@@ -193,6 +194,7 @@ class AdministrativeFeaturesTest(unittest.TestCase):
             {
                 "contract_id": 5,
                 "status": "Activo",
+                "starts_on": date.today(),
                 "expires_on": date.today(),
                 "vehicle_id": 10,
                 "vehicle_type": "Carro",

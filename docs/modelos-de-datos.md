@@ -10,7 +10,7 @@ Este documento presenta el modelo entidad-relación (MER), el modelo relacional 
 - **Sesión**: sesión de autenticación de un usuario.
 - **Cliente**: titular de un contrato.
 - **Vehículo**: vehículo identificado por placa y tipo.
-- **Contrato**: mensualidad de un cliente para un vehículo.
+- **Contrato**: período de mensualidad de un cliente para un vehículo, con fechas de inicio y vencimiento.
 - **Celda**: espacio de parqueo con categoría fija y estado Libre, Ocupado o En mantenimiento.
 - **Caja**: apertura de caja realizada por un usuario.
 - **Tránsito**: evento de entrada o salida de un vehículo.
@@ -23,7 +23,7 @@ Este documento presenta el modelo entidad-relación (MER), el modelo relacional 
 
 - Un usuario puede tener ninguna o muchas sesiones; cada sesión pertenece a un usuario.
 - Un cliente puede tener ninguno o muchos contratos; cada contrato pertenece a un cliente.
-- Cada contrato corresponde a exactamente un vehículo; un vehículo puede estar asociado a cero o muchos contratos. No se define exclusividad entre contratos vigentes del mismo vehículo.
+- Cada contrato corresponde a exactamente un vehículo; un vehículo puede estar asociado a cero o muchos contratos. No se define exclusividad entre contratos vigentes del mismo vehículo. Los pagos anticipados de contratos del mismo cliente y vehículo se programan secuencialmente; una fecha de inicio futura no concede acceso anticipado.
 - Un usuario puede abrir ninguna o muchas cajas; cada caja tiene un usuario titular.
 - Un vehículo, contrato, celda y usuario pueden aparecer en ninguno o muchos tránsitos; cada tránsito referencia exactamente uno de cada uno.
 - Un tránsito puede tener ninguna o muchas novedades; cada novedad pertenece a un tránsito y la registra un usuario.
@@ -79,6 +79,7 @@ erDiagram
         int cliente_id FK
         int vehiculo_id FK
         string estado
+        date fecha_inicio
         date fecha_vencimiento
     }
     CELDA {
@@ -159,7 +160,7 @@ VEHICLES(
 
 CONTRACTS(
   id PK, customer_id FK -> CUSTOMERS.id,
-  vehicle_id FK -> VEHICLES.id, status, expires_on?,
+  vehicle_id FK -> VEHICLES.id, status, starts_on?, expires_on?,
   cancelled_by? FK -> USERS.id, cancellation_justification?,
   cancelled_at?, created_at
 )
@@ -221,7 +222,7 @@ El modelo físico vigente es el DDL de [`db/schema.sql`](../db/schema.sql). Se i
 | `user_sessions` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `user_id BIGINT UNSIGNED NOT NULL FK`; `token_hash CHAR(64) NOT NULL UNIQUE`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)`; `revoked_at DATETIME(6) NULL` |
 | `customers` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `document_type ENUM('CC','CE','NIT') NOT NULL`; `document VARCHAR(30) NOT NULL UNIQUE`; `full_name VARCHAR(160) NOT NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
 | `vehicles` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `plate VARCHAR(6) NOT NULL UNIQUE`; `vehicle_type ENUM('Carro','Moto','Camioneta') NOT NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
-| `contracts` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `customer_id BIGINT UNSIGNED NOT NULL FK`; `vehicle_id BIGINT UNSIGNED NOT NULL FK`; `status ENUM('Pendiente de Pago','Activo','Vencido','Cancelado') NOT NULL DEFAULT 'Pendiente de Pago'`; `expires_on DATE NULL`; `cancelled_by BIGINT UNSIGNED NULL FK`; `cancellation_justification VARCHAR(1000) NULL`; `cancelled_at DATETIME(6) NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
+| `contracts` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `customer_id BIGINT UNSIGNED NOT NULL FK`; `vehicle_id BIGINT UNSIGNED NOT NULL FK`; `status ENUM('Pendiente de Pago','Activo','Vencido','Cancelado') NOT NULL DEFAULT 'Pendiente de Pago'`; `starts_on DATE NULL`; `expires_on DATE NULL`; `cancelled_by BIGINT UNSIGNED NULL FK`; `cancellation_justification VARCHAR(1000) NULL`; `cancelled_at DATETIME(6) NULL`; `created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
 | `cells` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `label VARCHAR(30) NOT NULL UNIQUE`; `category ENUM('Carro','Moto','Camioneta','Discapacitado') NOT NULL`; `status ENUM('Libre','Ocupado','En mantenimiento') NOT NULL DEFAULT 'Libre'` |
 | `cash_openings` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `user_id BIGINT UNSIGNED NOT NULL FK`; `base_amount DECIMAL(12,2) NOT NULL`; `opened_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)`; `closed_at DATETIME(6) NULL` |
 | `transits` | `id BIGINT UNSIGNED PK AUTO_INCREMENT`; `vehicle_id`, `contract_id`, `cell_id`, `operator_id BIGINT UNSIGNED NOT NULL FK`; `direction ENUM('Entrada','Salida') NOT NULL`; `occurred_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)` |
@@ -242,10 +243,13 @@ El modelo físico vigente es el DDL de [`db/schema.sql`](../db/schema.sql). Se i
 - Las cuentas se crean mediante la API con contraseña hasheada; las consultas de usuarios solo devuelven documento, rol y fecha de creación.
 - La auditoría de cancelaciones consulta los campos `cancelled_by`, `cancelled_at` y `cancellation_justification` de `contracts`; no crea una tabla de auditoría adicional.
 - La conexión de la aplicación inicia transacciones explícitas y usa `COMMIT` o `ROLLBACK`; el detalle de ejecución está en `backend/app/database.py`.
+- Los pagos bloquean la fila del vehículo y usan el vencimiento Activo más lejano de los contratos del mismo cliente y vehículo para programar el próximo período; `starts_on` impide usar anticipadamente un período futuro.
 
 ### Diferencias entre el modelo documentado y el esquema actual
 
 Cada contrato se vincula a exactamente un vehículo identificado por una placa única. `contracts.vehicle_id` tiene una clave foránea no única: tanto la especificación como el DDL permiten varios contratos para el mismo vehículo; no se define exclusividad entre contratos vigentes. Todos los contratos de ese vehículo comparten el último tránsito para aplicar Anti-Passback. La entrada y la salida bloquean la fila del vehículo para serializar los cambios de ocupación.
+
+La fecha `starts_on` registra el inicio efectivo de la vigencia. Para contratos históricos se inicializa desde el primer pago no anulado; si no hay pago registrado pero sí un vencimiento histórico, se usa la fecha de creación como compatibilidad. Contratos pendientes sin vencimiento conservan `NULL`. No se añade una fecha de inicio de pago separada ni se cambia la cardinalidad del modelo.
 
 `receipts` conserva una instantánea de los datos del cliente y no tiene una clave foránea a `customers`. `receipt_counters` es una tabla técnica para asignar consecutivos y no tiene relación declarada por clave foránea con `receipts`.
 
@@ -254,4 +258,5 @@ Cada contrato se vincula a exactamente un vehículo identificado por una placa �
 - Esquema físico inicial: [`db/schema.sql`](../db/schema.sql).
 - Migración para bases creadas con una versión anterior del esquema: [`db/migrations/001_contract_status_lifecycle.sql`](../db/migrations/001_contract_status_lifecycle.sql).
 - Migración para añadir el estado En mantenimiento y renombrar estados de celda existentes: [`db/migrations/002_cell_status_maintenance.sql`](../db/migrations/002_cell_status_maintenance.sql).
+- Migración para registrar el inicio de vigencia de contratos existentes: [`db/migrations/003_contract_service_start.sql`](../db/migrations/003_contract_service_start.sql).
 - Especificación de entidades y requisitos: [`specs/001-parking-operations/spec.md`](../specs/001-parking-operations/spec.md).

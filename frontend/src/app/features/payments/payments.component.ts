@@ -9,6 +9,7 @@ interface PaymentContract {
   id: number;
   plate: string;
   status: string;
+  starts_on: string | null;
   expires_on: string | null;
   customer_full_name: string;
 }
@@ -23,6 +24,7 @@ interface PaymentResult {
   net_amount: string;
   tax_amount: string;
   total_amount: string;
+  starts_on: string;
   expires_on: string;
 }
 

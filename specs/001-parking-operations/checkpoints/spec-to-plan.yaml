@@ -98,7 +98,7 @@ requirements:
           description: "Autorizar cambios de placa"
     notes: ""
   - req_id: "REQ-008"
-    req_description: "Entrada activa y dentro de vigencia"
+    req_description: "Entrada activa dentro de las fechas de inicio y vencimiento"
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
@@ -234,7 +234,7 @@ requirements:
           description: "Abrir caja y proteger transacciones del operario"
     notes: ""
   - req_id: "REQ-020"
-    req_description: "Activar contrato y extender vigencia según meses pagados"
+    req_description: "Secuenciar vigencias por cliente y vehículo y bloquear entradas antes de su inicio"
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
@@ -242,6 +242,8 @@ requirements:
       items:
         - item_id: "3.2"
           description: "Gestionar contratos y su ciclo de vida"
+        - item_id: "4.2"
+          description: "Validar fechas de vigencia antes de autorizar entradas"
         - item_id: "5.2"
           description: "Registrar pagos y renovar contratos"
     notes: ""

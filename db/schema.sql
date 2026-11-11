@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   customer_id BIGINT UNSIGNED NOT NULL,
   vehicle_id BIGINT UNSIGNED NOT NULL,
   status ENUM('Pendiente de Pago', 'Activo', 'Vencido', 'Cancelado') NOT NULL DEFAULT 'Pendiente de Pago',
+  starts_on DATE NULL,
   expires_on DATE NULL,
   cancelled_by BIGINT UNSIGNED NULL,
   cancellation_justification VARCHAR(1000) NULL,

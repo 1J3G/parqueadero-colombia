@@ -17,6 +17,7 @@ interface Contract {
   plate: string;
   vehicle_type: string;
   status: string;
+  starts_on: string | null;
   expires_on: string | null;
   customer_document: string;
   customer_full_name: string;

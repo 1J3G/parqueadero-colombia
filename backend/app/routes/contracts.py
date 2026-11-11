@@ -63,6 +63,7 @@ def create_contract(payload: ContractCreate, _user: dict = Depends(get_current_u
         "plate": plate,
         "vehicle_type": payload.vehicle_type,
         "status": "Pendiente de Pago",
+        "starts_on": None,
         "expires_on": None,
     }
 
@@ -74,7 +75,7 @@ def list_contracts(_user: dict = Depends(get_current_user)) -> list[dict]:
         cursor.execute(
             """
             SELECT c.id, c.customer_id, c.vehicle_id, v.plate, v.vehicle_type,
-                   c.status, c.expires_on, cu.document AS customer_document,
+                   c.status, c.starts_on, c.expires_on, cu.document AS customer_document,
                    cu.full_name AS customer_full_name,
                    latest.direction = 'Entrada' AS vehicle_inside,
                    CASE

@@ -26,6 +26,7 @@ describe('ParkingComponent', () => {
         plate: 'DHL325',
         vehicle_type: 'Carro',
         status: 'Activo',
+        starts_on: '2026-10-30',
         expires_on: '2026-11-30',
         customer_full_name: 'Pedro Franco',
         vehicle_inside: true,
@@ -54,6 +55,7 @@ describe('ParkingComponent', () => {
         plate: 'DHL325',
         vehicle_type: 'Carro',
         status: 'Activo',
+        starts_on: '2026-10-30',
         expires_on: '2026-11-30',
         customer_full_name: 'Pedro Franco',
         vehicle_inside: true,
@@ -70,6 +72,7 @@ describe('ParkingComponent', () => {
         plate: 'DHL325',
         vehicle_type: 'Carro',
         status: 'Activo',
+        starts_on: '2026-10-30',
         expires_on: '2026-11-30',
         customer_full_name: 'Pedro Franco',
         vehicle_inside: false,
@@ -85,5 +88,33 @@ describe('ParkingComponent', () => {
     expect(element.querySelector('select[name="cell"]')).not.toBeNull();
     expect(element.textContent).toContain('AUT03 · Carro');
     expect(element.querySelector('button[type="submit"]')).not.toBeNull();
+  });
+
+  it('does not offer entry before a prepaid contract period starts', () => {
+    const fixture = TestBed.createComponent(ParkingComponent);
+    fixture.detectChanges();
+
+    http.expectOne('/api/contracts').flush([
+      {
+        id: 8,
+        plate: 'DHL325',
+        vehicle_type: 'Carro',
+        status: 'Activo',
+        starts_on: '2026-12-01',
+        expires_on: '2026-12-30',
+        customer_full_name: 'Pedro Franco',
+        vehicle_inside: false,
+        occupied_cell_label: null,
+      },
+    ]);
+    fixture.detectChanges();
+    fixture.componentInstance.selectContract(8);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('Contrato aún no vigente');
+    expect(element.querySelector('select[name="cell"]')).toBeNull();
+    expect(element.querySelector('button[type="submit"]')).toBeNull();
+    http.expectNone((request) => request.url.startsWith('/api/cells'));
   });
 });

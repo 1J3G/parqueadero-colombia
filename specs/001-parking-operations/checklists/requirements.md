@@ -38,7 +38,7 @@
 - Se añadieron las historias de consulta/mantenimiento de celdas, alta de usuarios, auditoría de cancelaciones y confirmación de creación, con controles de acceso verificables.
 - Las celdas Discapacitado admiten solo vehículos Carro.
 - El historial de cancelaciones usa los campos de auditoría existentes en contratos, sin crear una segunda bitácora.
-- No se especifican duración ni cálculo del importe de mensualidades; no se añaden reglas para esos valores.
+- No se calcula la tarifa de la mensualidad; el negocio sigue proporcionando el valor neto. La vigencia sí conserva la regla mensual calendarizada, incluyendo la acumulación anticipada por cliente y vehículo especificada en REQ-020.
 - REQ-009 cubre tanto la placa/vehículo asociado como la selección en la interfaz y el rechazo de entradas duplicadas en el backend.
 - La relación correcta es un contrato por vehículo referenciado, pero un vehículo puede aparecer en varios contratos; no se afirma que exista exclusividad de contratos vigentes.
 - Este checklist valida la calidad de la especificación, no el cumplimiento operativo. RNF-001, RNF-004, RNF-005, RNF-006 y RNF-008 siguen pendientes de evidencia y tienen tareas abiertas en `tasks.md`.

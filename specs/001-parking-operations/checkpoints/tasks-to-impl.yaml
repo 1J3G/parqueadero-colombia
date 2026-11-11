@@ -1,14 +1,14 @@
 metadata:
-  generated: "2026-10-31"
+  generated: "2026-11-11"
   source_tasks: "specs/001-parking-operations/tasks.md"
-  last_updated: "2026-10-31"
+  last_updated: "2026-11-11"
 
 summary:
-  total_tasks: 51
-  completed_tasks: 46
+  total_tasks: 52
+  completed_tasks: 47
   in_progress_tasks: 0
   pending_tasks: 5
-  completion_percentage: 90.2
+  completion_percentage: 90.4
 
 tasks:
   - task_id: "T001"
@@ -216,7 +216,7 @@ tasks:
     implementation:
       files_changed: ["backend/app/payments.py", "backend/app/routes/payments.py"]
     upstream_trace:
-      plan_item: "3.2,5.2"
+      plan_item: "3.2,4.2,5.2"
       requirements: ["REQ-006", "REQ-020", "REQ-021", "REQ-022"]
       full_trace: "REQ-006,REQ-020,REQ-021,REQ-022 -> Step 3.2,5.2 -> T026 -> backend/app/payments.py,backend/app/routes/payments.py"
   - task_id: "T027"
@@ -484,10 +484,34 @@ tasks:
       plan_item: "7.3"
       requirements: ["RNF-008"]
       full_trace: "RNF-008 -> Step 7.3 -> T051 -> timed operator usability test"
+  - task_id: "T052"
+    status: "completed"
+    implementation:
+      files_changed:
+        - "db/schema.sql"
+        - "db/migrations/003_contract_service_start.sql"
+        - "backend/app/domain.py"
+        - "backend/app/payments.py"
+        - "backend/app/routes/contracts.py"
+        - "backend/app/routes/transits.py"
+        - "frontend/src/app/features/contracts/"
+        - "frontend/src/app/features/payments/"
+        - "frontend/src/app/features/parking/"
+        - "backend/tests/test_payments.py"
+        - "frontend/src/app/features/parking/parking.component.spec.ts"
+        - "docs/modelos-de-datos.puml"
+        - "docs/arquitectura-sistema.puml"
+        - "out/docs/modelos-de-datos/"
+        - "out/docs/arquitectura-sistema/"
+        - "specs/001-parking-operations/"
+    upstream_trace:
+      plan_item: "3.2,5.2"
+      requirements: ["REQ-008", "REQ-020", "RNF-006"]
+      full_trace: "REQ-008,REQ-020,RNF-006 -> Step 3.2,5.2 -> T052 -> sequential service periods and start-date access control"
 
 pending_tasks: ["T047", "T048", "T049", "T050", "T051"]
 
-repository_state: "backend/requirements-dev.txt is newly added and remains unstaged; no commit or push was made."
+repository_state: "T052 changes are in the working tree; no commit or push was made."
 
 traceability_chain:
   - chain_id: "TRACE-CASH-CLOSE"
@@ -504,6 +528,13 @@ traceability_chain:
     tasks: ["T020", "T021", "T022", "T024"]
     files: ["backend/app/transits.py", "backend/app/routes/transits.py", "frontend/src/app/features/parking/parking.component.ts"]
     status: "complete"
+  - chain_id: "TRACE-CONTRACT-RENEWAL-SEQUENCE"
+    requirement: "REQ-008, REQ-020, RNF-006"
+    plan_phase: "Phase-3, Phase-4, Phase-5"
+    plan_item: "3.2, 5.2"
+    tasks: ["T052"]
+    files: ["db/schema.sql", "db/migrations/003_contract_service_start.sql", "backend/app/payments.py", "backend/app/routes/transits.py", "frontend/src/app/features/parking/"]
+    status: "complete"
 
 validation:
   passed: false
@@ -511,7 +542,7 @@ validation:
   non_functional_validation_passed: false
   errors: []
   warnings:
-    - "Apply migrations 001 and 002 to an existing database only if each migration is pending; neither was run in this session."
+    - "Apply migration 003 to an existing database after 001 and 002; the migration was not run in this session."
     - "Authenticated MySQL integration has not been run."
     - "RNF-001, RNF-004, RNF-005, RNF-006, and RNF-008 lack completion evidence."
   blocking_issues: ["T047", "T048", "T049", "T050", "T051"]

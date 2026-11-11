@@ -50,7 +50,7 @@
   <h2>Contratos</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Cliente</th><th>Placa</th><th>Tipo</th><th>Estado</th><th>Vencimiento</th></tr></thead>
+      <thead><tr><th>Cliente</th><th>Placa</th><th>Tipo</th><th>Estado</th><th>Vigencia</th></tr></thead>
       <tbody>
         @for (contract of contracts(); track contract.id) {
           <tr>
@@ -58,7 +58,13 @@
             <td>{{ contract.plate }}</td>
             <td>{{ contract.vehicle_type }}</td>
             <td>{{ contract.status }}</td>
-            <td>{{ contract.expires_on ? (contract.expires_on | date:'mediumDate') : 'Sin pago' }}</td>
+            <td>
+              @if (contract.starts_on) {
+                {{ contract.starts_on | date:'mediumDate' }} – {{ contract.expires_on | date:'mediumDate' }}
+              } @else {
+                Sin pago
+              }
+            </td>
           </tr>
         } @empty {
           <tr><td colspan="5" class="muted">No hay contratos registrados.</td></tr>

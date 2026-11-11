@@ -16,6 +16,8 @@ Aplicación web para la operación de un parqueadero: usuarios, clientes, contra
 
 En **Entradas y salidas**, una placa que ya esté dentro muestra su celda ocupada y no permite asignar otra ni registrar un segundo ingreso. Después de confirmar su salida, el contrato Activo y vigente puede reingresar en otra celda compatible que esté Libre.
 
+Al pagar por adelantado otro contrato de la misma placa y cliente, el período nuevo se programa para el día siguiente al vencimiento vigente más lejano. El sistema muestra su inicio y vencimiento, y no permite usar ese contrato antes de su fecha de inicio.
+
 ## Documentación
 
 - [Modelo de datos](./docs/modelos-de-datos.md)

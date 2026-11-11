@@ -25,9 +25,18 @@ def compatible_cell(vehicle_type: str, category: str) -> bool:
     return (vehicle_type == "Carro" and category in ("Carro", "Discapacitado")) or vehicle_type == category
 
 
-def require_entry_permission(status: str, expires_on: date | None, today: date, exceptional: bool) -> None:
-    if status == "Activo" and expires_on is not None and today <= expires_on:
-        return
+def require_entry_permission(
+    status: str,
+    starts_on: date | None,
+    expires_on: date | None,
+    today: date,
+    exceptional: bool,
+) -> None:
+    if status == "Activo":
+        if starts_on is not None and starts_on > today:
+            raise HTTPException(status_code=409, detail="La vigencia del contrato aún no inicia.")
+        if expires_on is not None and today <= expires_on:
+            return
     if status in ("Pendiente de Pago", "Vencido", "Cancelado") and exceptional:
         return
     raise HTTPException(status_code=409, detail="El contrato no permite el ingreso sin autorización excepcional.")
@@ -38,7 +47,7 @@ def renewed_expiration(status: str, current_expiration: date | None, paid_months
         raise HTTPException(status_code=409, detail="Un contrato Cancelado no se puede reactivar; cree uno nuevo.")
     if paid_months < 1:
         raise HTTPException(status_code=400, detail="La cantidad de meses pagados debe ser mayor que cero.")
-    base_date = current_expiration if status == "Activo" and current_expiration and current_expiration >= payment_date else payment_date
+    base_date = current_expiration if current_expiration and current_expiration >= payment_date else payment_date
     month_index = base_date.month - 1 + paid_months
     year = base_date.year + month_index // 12
     month = month_index % 12 + 1

@@ -16,7 +16,7 @@
         <select name="contract" required [ngModel]="contractId()" (ngModelChange)="setContractId($event)">
           <option [ngValue]="null">Seleccione</option>
           @for (contract of contracts(); track contract.id) {
-            <option [ngValue]="contract.id">#{{ contract.id }} · {{ contract.plate }} · {{ contract.customer_full_name }} · {{ contract.status }}</option>
+            <option [ngValue]="contract.id">#{{ contract.id }} · {{ contract.plate }} · {{ contract.customer_full_name }} · {{ contract.status }}{{ contract.starts_on ? ' · desde ' + (contract.starts_on | date:'mediumDate') : '' }}{{ contract.expires_on ? ' · hasta ' + (contract.expires_on | date:'mediumDate') : '' }}</option>
           }
         </select>
       </label>
@@ -54,6 +54,7 @@
       <dt>Valor neto</dt><dd>{{ payment.net_amount | currency:'COP':'symbol-narrow' }}</dd>
       <dt>IVA (19%)</dt><dd>{{ payment.tax_amount | currency:'COP':'symbol-narrow' }}</dd>
       <dt>Total</dt><dd>{{ payment.total_amount | currency:'COP':'symbol-narrow' }}</dd>
+      <dt>Vigencia desde</dt><dd>{{ payment.starts_on | date:'mediumDate' }}</dd>
       <dt>Vigencia hasta</dt><dd>{{ payment.expires_on | date:'mediumDate' }}</dd>
     </dl>
   </section>

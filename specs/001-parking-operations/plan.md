@@ -102,7 +102,7 @@ Implementar los 32 requisitos funcionales definidos mediante Angular Standalone,
 
 - **Requirements**: REQ-006, REQ-020
 - **Design inputs**: Especificación, REQ-006 y aclaraciones de renovación en `Clarifications`; Constitución RN-02 y RN-12.
-- **Description**: Crear contratos Pendiente de Pago, mantener exclusivamente los cuatro estados documentados, persistir Vencido al detectar vencimiento, restringir cancelación a Administradores con justificación obligatoria, impedir reactivar un contrato Cancelado y calcular la nueva vigencia desde el vencimiento vigente o la fecha de pago según corresponda.
+- **Description**: Crear contratos Pendiente de Pago, mantener exclusivamente los cuatro estados documentados, persistir Vencido al detectar vencimiento, restringir cancelación a Administradores con justificación obligatoria, impedir reactivar un contrato Cancelado y persistir `starts_on`/`expires_on` para períodos secuenciales por cliente y vehículo. Añadir una migración aditiva para las bases existentes.
 
 #### Step 3.3: Autorizar cambios de placa
 
@@ -118,11 +118,11 @@ Implementar los 32 requisitos funcionales definidos mediante Angular Standalone,
 - **Design inputs**: Especificación, REQ-002, REQ-009, REQ-015 y REQ-016; Constitución RN-05 y RN-09.
 - **Description**: Exponer el estado de las celdas y el estado dentro/fuera de cada vehículo a usuarios autenticados; seleccionar únicamente celdas Libre compatibles y no ofrecer asignación cuando la placa ya tenga una entrada sin salida.
 
-#### Step 4.2: Aplicar reglas de ingreso, excepción y Anti-Passback
+#### Step 4.2: Aplicar reglas de vigencia, ingreso, excepción y Anti-Passback
 
-- **Requirements**: REQ-008, REQ-009, REQ-010
-- **Design inputs**: Especificación, REQ-008 a REQ-010 y aclaración sobre Cancelado; Constitución RN-03, RN-05 y RN-06.
-- **Description**: Rechazar el ingreso si el contrato no satisface estado y fecha de vigencia, salvo autorización explícita de Administrador más novedad para los estados Vencido, Pendiente de Pago o Cancelado. Bloquear en interfaz y API una segunda entrada para el mismo vehículo/placa aunque se use otro contrato, y rechazar salidas sin vehículo dentro.
+- **Requirements**: REQ-008, REQ-009, REQ-010, REQ-020
+- **Design inputs**: Especificación, REQ-008 a REQ-010 y REQ-020, aclaración sobre Cancelado; Constitución RN-03, RN-05, RN-06 y RN-12.
+- **Description**: Rechazar el ingreso si el contrato no satisface estado y fechas de inicio/vencimiento, salvo autorización explícita de Administrador más novedad para los estados Vencido, Pendiente de Pago o Cancelado. Bloquear en interfaz y API una segunda entrada para el mismo vehículo/placa aunque se use otro contrato, y rechazar salidas sin vehículo dentro.
 
 #### Step 4.3: Persistir tránsitos y ocupación de celdas
 
@@ -149,7 +149,7 @@ Implementar los 32 requisitos funcionales definidos mediante Angular Standalone,
 
 - **Requirements**: REQ-020, REQ-021, REQ-022
 - **Design inputs**: Especificación, REQ-020 a REQ-022 y aclaraciones de renovación; Constitución RN-12 y RN-15.
-- **Description**: Registrar los tres métodos permitidos, exigir referencia para transferencia y, al confirmar un pago válido, activar/extender el contrato de acuerdo con la fecha base definida.
+- **Description**: Registrar los tres métodos permitidos, exigir referencia para transferencia y, al confirmar un pago válido, bloquear el vehículo, obtener el vencimiento Activo más lejano del mismo cliente/vehículo y crear o extender un período no solapado. Mostrar ambas fechas y rechazar entradas antes del inicio.
 
 #### Step 5.3: Emitir comprobante fiscal
 
@@ -262,7 +262,7 @@ db/
 | REQ-005 | Un contrato vincula un vehículo por placa | 1.2, 3.1 | `db/schema.sql`, `backend/app/vehicles.py` |
 | REQ-006 | Estados válidos, vencimiento automático y cancelación administrativa justificada | 1.2, 3.2 | `db/schema.sql`, `db/migrations/001_contract_status_lifecycle.sql`, `backend/app/contracts.py`, `backend/app/routes/contracts.py`, `frontend/src/app/features/contracts/` |
 | REQ-007 | Cambio de placa autorizado por Administrador | 3.3 | `backend/app/contracts.py`, `backend/app/routes/contracts.py` |
-| REQ-008 | Entrada activa y dentro de vigencia | 4.2 | `backend/app/domain.py`, `backend/app/routes/transits.py` |
+| REQ-008 | Entrada activa dentro de las fechas de inicio y vencimiento | 4.2 | `backend/app/domain.py`, `backend/app/routes/transits.py`, `frontend/src/app/features/parking/` |
 | REQ-009 | Anti-Passback por placa; bloquear mientras está dentro y permitir reingreso después de salida | 4.1, 4.2, 4.3 | `backend/app/routes/contracts.py`, `backend/app/routes/transits.py`, `frontend/src/app/features/parking/` |
 | REQ-010 | Acceso excepcional a contratos no vigentes/cancelados | 4.2, 4.4 | `backend/app/domain.py`, `backend/app/routes/transits.py`, `backend/app/novelties.py` |
 | REQ-011 | Tránsito con hora servidor, operario y celda | 1.2, 4.3 | `db/schema.sql`, `backend/app/routes/transits.py` |
@@ -274,7 +274,7 @@ db/
 | REQ-017 | Ocupar celda atómicamente al confirmar entrada | 4.2, 4.3 | `backend/app/routes/transits.py`, `backend/app/database.py` |
 | REQ-018 | Liberar celda inmediatamente al procesar salida | 4.3 | `backend/app/routes/transits.py` |
 | REQ-019 | Apertura de caja con base antes del cobro | 1.2, 2.3 | `db/schema.sql`, `backend/app/cash.py`, `frontend/src/app/features/cash/cash-open.component.ts` |
-| REQ-020 | Activar contrato y extender vigencia según meses pagados | 3.2, 5.2 | `backend/app/contracts.py`, `backend/app/payments.py` |
+| REQ-020 | Secuenciar vigencias por cliente y vehículo | 3.2, 4.2, 5.2 | `db/schema.sql`, `db/migrations/003_contract_service_start.sql`, `backend/app/payments.py`, `backend/app/routes/contracts.py`, `backend/app/routes/transits.py`, `frontend/src/app/features/parking/`, `frontend/src/app/features/payments/` |
 | REQ-021 | Registrar método de pago permitido | 5.2 | `backend/app/payments.py` |
 | REQ-022 | Exigir referencia en transferencia | 5.2 | `backend/app/payments.py` |
 | REQ-023 | Comprobante consecutivo con neto, IVA y cliente | 1.2, 5.3 | `db/schema.sql`, `backend/app/receipts.py` |

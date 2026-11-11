@@ -1,6 +1,6 @@
 # Especificación: Gestión de operaciones del parqueadero
 
-**Feature Branch**: `new-funct`
+**Feature Branch**: `feature/contract-renewal-sequencing`
 
 **Creada**: 2026-10-24
 
@@ -15,7 +15,7 @@
 ### Session 2026-10-24
 
 - Q: ¿Qué debe ocurrir cuando un vehículo intenta ingresar con un contrato en estado Cancelado? → A: Permitir una excepción únicamente con autorización de Administrador y registro de novedad, igual que para contratos Vencidos o Pendientes de Pago.
-- Q: Cuando se paga o renueva una mensualidad, ¿desde qué fecha deben contarse los meses pagados para calcular el nuevo vencimiento? → A: Si el contrato aún está vigente, desde su vencimiento actual; si ya venció o es nuevo, desde la fecha del pago.
+- Q: Cuando se paga o renueva una mensualidad, ¿desde qué fecha deben contarse los meses pagados para calcular el nuevo vencimiento? → A: Se cuentan desde el vencimiento Activo más lejano del mismo cliente y vehículo; si no existe uno, desde la fecha del pago.
 - Q: ¿Puede un pago de mensualidad reactivar un contrato que está Cancelado, o debe crearse un contrato nuevo? → A: No se reactiva; debe crearse un contrato nuevo.
 - Q: ¿Cómo debe obtenerse el valor neto de la mensualidad antes de calcular el IVA del comprobante fiscal? → A: El negocio fija la tarifa fuera del sistema y proporciona el valor neto al registrar el pago.
 - Q: ¿Cómo debe manejarse el cierre de caja? → A: El titular puede cerrar su caja y un Administrador puede cerrar cualquier caja abierta. Se registra la fecha y hora exactas del servidor, sin arqueo ni monto final.
@@ -25,6 +25,10 @@
 
 - Q: ¿Quién puede gestionar el mantenimiento de las celdas y qué celdas puede cambiar? → A: Solo un Administrador puede cambiar entre Libre y En mantenimiento, y únicamente si la celda no está Ocupada. Entradas y salidas siguen administrando Ocupado/Libre.
 - Q: ¿Cómo se establece la contraseña de una cuenta nueva? → A: El Administrador la define al crear el usuario y se almacena como hash.
+
+### Session 2026-11-11
+
+- Q: Si se paga un contrato nuevo para el mismo cliente y vehículo mientras otro de sus contratos sigue vigente, ¿cuándo inicia el nuevo período? → A: El período inicia el día siguiente al vencimiento vigente más lejano de ese cliente y vehículo. Los meses pagados se suman desde ese vencimiento; el nuevo contrato no habilita entradas antes de su fecha de inicio. Si no hay otro contrato Activo vigente, inicia en la fecha del pago.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -74,7 +78,7 @@ Un operario registra el tránsito de un vehículo, asigna una celda compatible y
 
 **Acceptance Scenarios**:
 
-1. **Given** un vehículo con contrato Activo cuya fecha actual no supera el vencimiento, estado Fuera del Parqueadero y una celda Libre compatible, **When** el operario confirma la entrada, **Then** se registra el ingreso inmutable y la celda pasa a Ocupado de forma atómica.
+1. **Given** un vehículo con contrato Activo dentro de su período de vigencia, estado Fuera del Parqueadero y una celda Libre compatible, **When** el operario confirma la entrada, **Then** se registra el ingreso inmutable y la celda pasa a Ocupado de forma atómica.
 2. **Given** un contrato Vencido, Pendiente de Pago o Cancelado, **When** se intenta una entrada sin autorización explícita de un Administrador y sin registrar una novedad de acceso excepcional, **Then** el ingreso se bloquea.
 3. **Given** un contrato Cancelado, **When** un Administrador autoriza explícitamente el ingreso y se registra una novedad de acceso excepcional, **Then** el sistema puede permitir la entrada.
 4. **Given** un vehículo Dentro del Parqueadero, **When** se intenta otra entrada, **Then** se bloquea por Anti-Passback.
@@ -98,13 +102,15 @@ Un operario abre caja con una base de efectivo antes de procesar pagos. El pago 
 
 1. **Given** un operario sin caja abierta, **When** intenta cobrar una mensualidad, **Then** el sistema impide registrar el pago.
 2. **Given** una caja abierta a nombre del operario y un contrato nuevo o renovable que no está Cancelado, **When** registra exitosamente un pago, **Then** el contrato pasa inmediatamente a Activo y su fecha de vencimiento se extiende de acuerdo con los meses pagados.
-3. **Given** un contrato vigente, **When** se registra exitosamente una renovación, **Then** los meses pagados se cuentan desde su fecha de vencimiento actual.
-4. **Given** un contrato vencido o nuevo, **When** se registra exitosamente un pago, **Then** los meses pagados se cuentan desde la fecha del pago.
-5. **Given** un pago por transferencia bancaria sin código o número de referencia, **When** se intenta registrarlo, **Then** el sistema lo rechaza.
-6. **Given** un pago registrado por Efectivo, Transferencia Bancaria o Tarjeta de Crédito/Débito y el valor neto de tarifa fijado fuera del sistema, **When** se confirma, **Then** queda asociado al operario que abrió la caja vigente y se genera un comprobante fiscal con numeración consecutiva única, ese valor neto, IVA del 19% y datos del cliente.
-7. **Given** un pago registrado, **When** un operario intenta anularlo o eliminarlo, **Then** el sistema deniega la operación.
-8. **Given** un pago registrado, **When** un Administrador confirma la anulación con sus credenciales y una justificación, **Then** el pago se anula y la justificación queda en la bitácora de auditoría.
-9. **Given** un contrato Cancelado, **When** se intenta reactivarlo mediante el pago de una mensualidad, **Then** el sistema exige crear un contrato nuevo en lugar de reactivar el Cancelado.
+3. **Given** un contrato Activo vigente, **When** se registra exitosamente una renovación en ese contrato, **Then** se conserva la fecha de inicio del período y los meses pagados se suman desde el vencimiento Activo más lejano del mismo cliente y vehículo.
+4. **Given** un contrato nuevo o vencido y ningún otro contrato Activo vigente del mismo cliente y vehículo, **When** se registra exitosamente un pago, **Then** el período inicia en la fecha del pago y los meses pagados se cuentan desde esa fecha.
+5. **Given** un contrato nuevo para un cliente y vehículo con otro contrato Activo que vence el 30 de noviembre, **When** se paga un mes el 11 de noviembre, **Then** el nuevo período inicia el 1 de diciembre, vence el 30 de diciembre y no permite entradas antes de su inicio.
+6. **Given** varios contratos Activos vigentes del mismo cliente y vehículo, **When** se registra un pago para otro contrato, **Then** el nuevo período se programa después del vencimiento vigente más lejano; contratos de otro cliente o de otro vehículo no afectan el cálculo.
+7. **Given** un pago por transferencia bancaria sin código o número de referencia, **When** se intenta registrarlo, **Then** el sistema lo rechaza.
+8. **Given** un pago registrado por Efectivo, Transferencia Bancaria o Tarjeta de Crédito/Débito y el valor neto de tarifa fijado fuera del sistema, **When** se confirma, **Then** queda asociado al operario que abrió la caja vigente y se genera un comprobante fiscal con numeración consecutiva única, ese valor neto, IVA del 19% y datos del cliente.
+9. **Given** un pago registrado, **When** un operario intenta anularlo o eliminarlo, **Then** el sistema deniega la operación.
+10. **Given** un pago registrado, **When** un Administrador confirma la anulación con sus credenciales y una justificación, **Then** el pago se anula y la justificación queda en la bitácora de auditoría.
+11. **Given** un contrato Cancelado, **When** se intenta reactivarlo mediante el pago de una mensualidad, **Then** el sistema exige crear un contrato nuevo en lugar de reactivar el Cancelado.
 
 ### User Story 5 - Consultar y administrar celdas (Priority: P1)
 
@@ -164,6 +170,8 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - Si no existe una celda Libre compatible, la entrada no se confirma y ninguna celda cambia de estado.
 - Una transferencia sin referencia obligatoria no puede completar el registro del pago.
 - Para contratos Vencidos, Pendientes de Pago o Cancelados, la autorización administrativa de acceso excepcional no reemplaza el registro obligatorio de la novedad de acceso.
+- Un contrato Activo con fecha de inicio futura no habilita entradas; el intervalo de vigencia incluye tanto la fecha de inicio como la de vencimiento.
+- Para un pago anticipado, solo cuentan contratos Activos y no vencidos del mismo cliente y vehículo; si hay varios, se toma el vencimiento más lejano. Los períodos de otro cliente o de otro vehículo se ignoran.
 - No se permite completar una operación de tránsito si no puede persistirse con la fecha y hora del servidor, el ID del operario y el ID de la celda.
 
 ## Requirements *(mandatory)*
@@ -177,7 +185,7 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - **REQ-005**: El sistema MUST vincular cada contrato de mensualidad con exactamente un vehículo identificado por su placa. Un vehículo puede estar asociado a varios contratos; no se define exclusividad entre contratos vigentes.
 - **REQ-006**: El sistema MUST aceptar exclusivamente los estados contractuales Pendiente de Pago, Activo, Vencido y Cancelado; asignar Pendiente de Pago por defecto al contrato nuevo sin pago; persistir Vencido cuando detecte que la fecha del servidor supera el vencimiento de un contrato Activo; permitir cancelar contratos únicamente a un Administrador con justificación obligatoria; y exigir un contrato nuevo para sustituir uno Cancelado.
 - **REQ-007**: El sistema MUST permitir únicamente a un usuario con rol Administrador autorizar el cambio de placa de un contrato existente.
-- **REQ-008**: El sistema MUST permitir la entrada automatizada solo si el contrato está Activo y la fecha actual es menor o igual a su fecha de vencimiento.
+- **REQ-008**: El sistema MUST permitir la entrada automatizada solo si el contrato está Activo y la fecha del servidor es mayor o igual a su fecha de inicio (cuando exista) y menor o igual a su fecha de vencimiento.
 - **REQ-009**: El sistema MUST bloquear nuevas entradas para vehículos Dentro del Parqueadero y salidas para vehículos Fuera del Parqueadero. Si la placa ya ocupa una celda, la interfaz MUST mostrar esa celda y MUST NOT ofrecer otra celda ni habilitar una nueva entrada; el backend MUST rechazar la repetición incluso si se envía otra celda o un contrato diferente asociado al mismo vehículo. Después de una salida confirmada, un contrato Activo y vigente MUST permitir una nueva entrada en una celda Libre compatible.
 - **REQ-010**: El sistema MUST bloquear la entrada de vehículos con contrato Vencido, Pendiente de Pago o Cancelado hasta que un Administrador otorgue autorización explícita y se registre una novedad de acceso excepcional.
 - **REQ-011**: El sistema MUST persistir cada tránsito con fecha y hora exactas del servidor, ID del operario e ID de la celda asignada.
@@ -189,7 +197,7 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - **REQ-017**: El sistema MUST cambiar de Libre a Ocupado, de forma atómica al confirmar la entrada, la celda asignada y disponible.
 - **REQ-018**: El sistema MUST cambiar automáticamente a Libre la celda Ocupada al procesar la salida de su vehículo.
 - **REQ-019**: El sistema MUST exigir que el operario abra caja con una base de efectivo antes de permitirle cobrar mensualidades.
-- **REQ-020**: El sistema MUST activar inmediatamente el contrato nuevo o renovable que no esté Cancelado cuando el pago se registre exitosamente y contar los meses pagados desde el vencimiento actual si el contrato aún está vigente, o desde la fecha del pago si el contrato está vencido o es nuevo.
+- **REQ-020**: El sistema MUST activar el contrato no Cancelado al registrar exitosamente su pago y persistir las fechas de inicio y vencimiento de su período. MUST determinar el vencimiento base como la fecha más lejana entre los vencimientos de contratos Activos no vencidos del mismo cliente y vehículo, incluido el contrato pagado si cumple esas condiciones. Para una renovación cuyo contrato ya está Activo y vigente, MUST conservar su fecha de inicio; para un contrato nuevo o vencido con vencimiento base vigente, MUST iniciar el nuevo período el día siguiente a esa fecha. Si no existe vencimiento base vigente, MUST iniciar y contar los meses desde la fecha del pago. Un contrato con inicio futuro MUST NOT habilitar entradas antes de esa fecha. Los meses completos MUST conservar la convención calendario existente, limitando el día al último día del mes de destino cuando sea necesario.
 - **REQ-021**: El sistema MUST registrar los métodos Efectivo, Transferencia Bancaria y Tarjeta de Crédito/Débito.
 - **REQ-022**: El sistema MUST exigir el código o número de referencia para registrar un pago por transferencia bancaria.
 - **REQ-023**: El sistema MUST generar por cada pago un comprobante fiscal con numeración consecutiva única, el valor neto de mensualidad proporcionado al registrar el pago, IVA del 19% y datos de identificación del cliente; el negocio fija esa tarifa fuera del sistema.
@@ -210,7 +218,7 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - **RNF-003 — Control de acceso**: El sistema MUST validar en el servidor la sesión activa y el rol requerido para cada operación protegida; la autorización MUST NOT depender únicamente de controles de la interfaz de usuario.
 - **RNF-004 — Disponibilidad**: El sistema MUST mantener una disponibilidad mensual mínima del 99,5 % durante el horario de operación, excluyendo mantenimientos programados.
 - **RNF-005 — Recuperación**: El sistema MUST realizar copias de seguridad diarias y permitir restaurar el servicio en un máximo de 4 horas ante una falla.
-- **RNF-006 — Integridad**: Las operaciones de entrada, salida y pago MUST evitar registros parciales o duplicados ante errores o solicitudes concurrentes.
+- **RNF-006 — Integridad**: Las operaciones de entrada, salida y pago MUST evitar registros parciales o duplicados ante errores o solicitudes concurrentes. Los pagos que programan vigencias para un mismo vehículo MUST serializar el cálculo de vencimientos.
 - **RNF-007 — Auditoría**: Los registros de autorización excepcional, cancelación de contratos y anulación de pagos MUST conservar quién realizó la acción, cuándo y la justificación, y MUST NOT poder modificarse desde la aplicación.
 - **RNF-008 — Usabilidad**: Un operario capacitado MUST poder completar una entrada o salida habitual en un máximo de 3 minutos, sin contar el tiempo de atención al cliente.
 
@@ -218,8 +226,8 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 
 - **Usuario**: Persona operaria o administradora identificada por documento, con credenciales y rol; una sesión activa habilita operaciones específicas.
 - **Cliente**: Persona identificada de forma única por CC, CE o NIT.
-- **Vehículo**: Vehículo identificado por placa y tipo, asociado de forma exclusiva a un contrato.
-- **Contrato de mensualidad**: Relación entre un cliente y exactamente un vehículo, con estado y fecha de vencimiento. El mismo vehículo puede estar referenciado por varios contratos.
+- **Vehículo**: Vehículo identificado por placa y tipo; puede ser referenciado por varios contratos.
+- **Contrato de mensualidad**: Relación entre un cliente y exactamente un vehículo, con estado, fecha de inicio y fecha de vencimiento del período. Un período programado no permite entradas antes de su inicio.
 - **Caja**: Apertura realizada por un operario con base de efectivo, asociada a su turno y cerrada por el titular o un Administrador con fecha y hora del servidor.
 - **Tránsito**: Registro inmutable de entrada o salida que identifica fecha y hora del servidor, operario y celda.
 - **Novedad**: Descripción de acceso excepcional o daño preexistente; la novedad física incluye severidad y queda vinculada al tránsito de entrada.
@@ -245,13 +253,14 @@ Cuando una operación crea un registro correctamente, el usuario recibe una conf
 - **SC-011**: El 100% de las altas de usuario requieren rol Administrador, contraseña no vacía y almacenamiento no reversible de credenciales.
 - **SC-012**: El 100% de las cancelaciones consultadas conservan contrato, Administrador, fecha y justificación, y solo son visibles para Administradores.
 - **SC-013**: El 100% de las creaciones exitosas muestran confirmación y ninguna operación fallida muestra confirmación de éxito.
+- **SC-014**: El 100% de los pagos anticipados para un mismo cliente y vehículo programan períodos consecutivos desde el último vencimiento vigente, y esos períodos no habilitan entradas antes de su fecha de inicio.
 
 ## Assumptions
 
 - La fecha y hora actual usadas para validar la vigencia contractual corresponden a la fecha del servidor.
 - Los tipos de vehículo usados para compatibilidad de celdas son Carro, Moto y Camioneta; las celdas Discapacitado solo admiten vehículos Carro.
 - La categoría y severidad de novedades de daños físicos no se aplican automáticamente a las novedades de acceso excepcional, porque son registros con propósitos distintos en los requisitos entregados.
-- El negocio fija la tarifa de la mensualidad fuera del sistema y proporciona su valor neto al registrar el pago; el sistema no mantiene tarifas. Los meses pagados se cuentan desde el vencimiento actual para un contrato vigente y desde la fecha del pago para uno vencido o nuevo.
+- El negocio fija la tarifa de la mensualidad fuera del sistema y proporciona su valor neto al registrar el pago; el sistema no mantiene tarifas. Las vigencias se encadenan por cliente y vehículo: se usa el vencimiento activo más lejano y el siguiente período inicia al día siguiente; si no hay vencimiento vigente, inicia el día del pago.
 - Un contrato Cancelado no se reactiva por pago; se requiere crear un contrato nuevo para volver a contratar la mensualidad.
-- No se define exclusividad entre contratos vigentes asociados al mismo vehículo; todos comparten un único estado físico de ocupación controlado por sus tránsitos.
+- No se define exclusividad entre contratos vigentes asociados al mismo vehículo; todos comparten un único estado físico de ocupación controlado por sus tránsitos. Para calcular vigencias, el cliente y el vehículo deben coincidir y los contratos de otra titularidad no se encadenan.
 - El cierre de caja registra únicamente la fecha y hora del servidor; no realiza arqueo ni exige monto final. El titular puede cerrar su caja y un Administrador puede cerrar cualquier caja abierta.

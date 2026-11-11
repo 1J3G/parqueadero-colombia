@@ -24,16 +24,28 @@ class DomainRulesTest(unittest.TestCase):
         self.assertFalse(compatible_cell("Camioneta", "Discapacitado"))
 
     def test_entry_requires_active_unexpired_contract_or_exception_for_allowed_statuses(self):
-        require_entry_permission("Activo", date(2026, 10, 24), date(2026, 10, 24), False)
-        require_entry_permission("Vencido", None, date(2026, 10, 24), True)
+        require_entry_permission(
+            "Activo", date(2026, 10, 24), date(2026, 10, 24), date(2026, 10, 24), False
+        )
+        require_entry_permission("Vencido", None, None, date(2026, 10, 24), True)
         with self.assertRaises(HTTPException):
-            require_entry_permission("Activo", date(2026, 10, 23), date(2026, 10, 24), True)
+            require_entry_permission(
+                "Activo", date(2026, 10, 1), date(2026, 10, 23), date(2026, 10, 24), True
+            )
         with self.assertRaises(HTTPException):
-            require_entry_permission("Pendiente de Pago", None, date(2026, 10, 24), False)
+            require_entry_permission(
+                "Activo", date(2026, 10, 25), date(2026, 11, 24), date(2026, 10, 24), False
+            )
+        with self.assertRaises(HTTPException):
+            require_entry_permission("Pendiente de Pago", None, None, date(2026, 10, 24), False)
 
     def test_renewal_uses_current_expiration_or_payment_day(self):
         self.assertEqual(
             renewed_expiration("Activo", date(2026, 11, 30), 1, date(2026, 10, 24)),
+            date(2026, 12, 30),
+        )
+        self.assertEqual(
+            renewed_expiration("Pendiente de Pago", date(2026, 11, 30), 1, date(2026, 11, 11)),
             date(2026, 12, 30),
         )
         self.assertEqual(

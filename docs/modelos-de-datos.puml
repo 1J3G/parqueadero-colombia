@@ -39,6 +39,9 @@ note right of Vehiculo
   Varios contratos pueden referenciar
   el mismo vehiculo y comparten su
   estado de ocupacion actual.
+  Los pagos anticipados del mismo cliente
+  encadenan fechas de vigencia; un período
+  futuro no permite entradas anticipadas.
 end note
 @enduml
 
@@ -83,6 +86,7 @@ class "contracts" as contracts {
   customer_id : FK
   vehicle_id : FK
   status
+  starts_on
   expires_on
   cancelled_by : FK
   cancellation_justification
@@ -238,6 +242,7 @@ class "contracts" as db_contracts {
   customer_id : BIGINT UNSIGNED <<FK, NOT NULL>>
   vehicle_id : BIGINT UNSIGNED <<FK, NOT NULL>>
   status : ENUM('Pendiente de Pago','Activo','Vencido','Cancelado') <<NOT NULL>>
+  starts_on : DATE <<NULL>>
   expires_on : DATE <<NULL>>
   cancelled_by : BIGINT UNSIGNED <<FK, NULL>>
   cancellation_justification : VARCHAR(1000) <<NULL>>
