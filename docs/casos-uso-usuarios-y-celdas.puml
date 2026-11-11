@@ -1,0 +1,65 @@
+@startuml Casos de uso - Usuarios y celdas
+title Gestion de usuarios y celdas - Casos de uso
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuario autenticado" as Usuario
+actor "Operario" as Operario
+actor "Administrador" as Administrador
+Usuario <|-- Operario
+Usuario <|-- Administrador
+
+rectangle "Sistema de parqueadero" {
+  usecase "Iniciar sesion" as UCInicioSesion
+  usecase "Validar credenciales" as UCValidarCredenciales
+  usecase "Consultar celdas" as UCConsultarCeldas
+  usecase "Mostrar estado de celda" as UCMostrarEstado
+  usecase "Mostrar placa si la celda\nesta Ocupada" as UCMostrarPlaca
+  usecase "Crear cuenta de usuario" as UCCrearUsuario
+  usecase "Validar documento unico,\nrol permitido y contraseña\ninicial no vacia" as UCValidarUsuario
+  usecase "Consultar cuentas de usuario" as UCConsultarUsuarios
+  usecase "Poner celda En mantenimiento" as UCMantenimiento
+  usecase "Marcar celda como Libre" as UCLibre
+  usecase "Validar estado de celda" as UCValidarCelda
+}
+
+Usuario --> UCInicioSesion
+Usuario --> UCConsultarCeldas
+Administrador --> UCCrearUsuario
+Administrador --> UCConsultarUsuarios
+Administrador --> UCMantenimiento
+Administrador --> UCLibre
+
+UCInicioSesion ..> UCValidarCredenciales : <<include>>
+UCConsultarCeldas ..> UCMostrarEstado : <<include>>
+UCMostrarPlaca ..> UCConsultarCeldas : <<extend>>
+UCCrearUsuario ..> UCValidarUsuario : <<include>>
+UCMantenimiento ..> UCValidarCelda : <<include>>
+UCLibre ..> UCValidarCelda : <<include>>
+
+note right of UCConsultarUsuarios
+  Solo Administradores pueden consultar
+  o crear cuentas. El backend rechaza
+  estas solicitudes para Operarios.
+end note
+
+note right of UCValidarUsuario
+  Las contraseñas se almacenan con hash.
+  La consulta de cuentas no expone
+  la contraseña ni su hash.
+end note
+
+note bottom of UCValidarCelda
+  Solo se permite cambiar Libre a
+  En mantenimiento o En mantenimiento
+  a Libre. Una celda Ocupada no puede
+  cambiarse manualmente.
+end note
+
+note bottom of UCConsultarCeldas
+  Requiere sesion activa.
+  Se muestran los estados Libre, Ocupado
+  o En mantenimiento; la placa se muestra
+  unicamente para una celda Ocupada.
+end note
+@enduml

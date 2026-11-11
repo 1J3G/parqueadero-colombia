@@ -1,0 +1,233 @@
+@startuml Secuencia - Inicio de sesion
+title Inicio de sesion de usuario
+autonumber
+
+actor "Operario o Administrador" as Usuario
+boundary "Interfaz web" as UI
+control "API /auth/login" as API
+database "MySQL" as DB
+
+Usuario -> UI: Ingresa documento y contraseña
+UI -> API: POST /api/auth/login
+API -> DB: Buscar usuario por documento
+DB --> API: Usuario y hash de contraseña
+
+alt Credenciales validas
+  API -> API: Verificar contraseña contra hash
+  API -> DB: Crear sesion y guardar hash del token
+  DB --> API: Sesion creada
+  API --> UI: Respuesta de autenticacion y cookie de sesion
+  UI --> Usuario: Mostrar acceso autenticado
+else Credenciales invalidas
+  API --> UI: Rechazar autenticacion
+  UI --> Usuario: Mostrar error de acceso
+end
+@enduml
+
+@startuml Secuencia - Registrar entrada
+title Registro de entrada de vehiculo
+autonumber
+
+actor "Operario o Administrador" as Usuario
+boundary "Interfaz de entradas y salidas" as UI
+control "API /transits/entry" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+Usuario -> UI: Selecciona contrato y celda\n(confirma novedades si aplica)
+UI -> API: POST /api/transits/entry\n(cookie de sesion, contrato, celda, novedades)
+API -> Auth: Validar sesion activa
+Auth -> DB: Consultar sesion y usuario
+DB --> Auth: Usuario autenticado y rol
+Auth --> API: Identidad y rol
+
+API -> DB: Iniciar transaccion
+opt El usuario es Operario
+  API -> DB: Verificar caja abierta a su nombre
+  DB --> API: Caja abierta
+end
+API -> DB: Actualizar contratos vencidos
+API -> DB: Consultar contrato y vehiculo con bloqueo
+DB --> API: Estado contractual, vencimiento y tipo de vehiculo
+API -> DB: Consultar fecha del servidor
+DB --> API: Fecha actual
+
+alt Contrato Activo y vigente
+  API -> API: Autorizar entrada automatica
+else Contrato Vencido, Pendiente de Pago o Cancelado
+  alt Se envio autorizacion excepcional
+    API -> DB: Verificar credenciales de Administrador
+    DB --> API: Resultado de validacion
+    alt Administrador valido y novedad informada
+      API -> API: Autorizar acceso excepcional
+    else Autorizacion invalida o novedad ausente
+      API -> DB: Revertir transaccion
+      API --> UI: Rechazar entrada
+      UI --> Usuario: Informar autorizacion invalida
+      break Entrada no autorizada
+      end
+    end
+  else No se envio autorizacion excepcional
+    API -> DB: Revertir transaccion
+    API --> UI: Rechazar entrada
+    UI --> Usuario: Informar que el contrato no permite el acceso
+    break Entrada no autorizada
+    end
+  end
+end
+
+API -> DB: Consultar ultimo transito del vehiculo
+DB --> API: Ultima direccion y celda
+alt Vehiculo ya esta dentro
+  API -> DB: Revertir transaccion
+  API --> UI: Rechazar entrada duplicada
+  UI --> Usuario: Informar que el vehiculo ya esta dentro
+  break Entrada duplicada
+  end
+else Vehiculo esta fuera
+  API -> DB: Consultar celda y bloquear fila
+  DB --> API: Categoria y estado de celda
+  alt Celda incompatible o no Libre
+    API -> DB: Revertir transaccion
+    API --> UI: Rechazar asignacion
+    UI --> Usuario: Informar incompatibilidad o falta de disponibilidad
+    break Celda no disponible
+    end
+  else Celda compatible y Libre
+    API -> DB: Cambiar celda de Libre a Ocupado
+    API -> DB: Insertar transito de Entrada
+    opt Hay novedad de acceso excepcional o daños preexistentes
+      API -> DB: Insertar novedades asociadas al transito
+    end
+    API -> DB: Confirmar transaccion
+    API --> UI: Entrada registrada
+    UI --> Usuario: Mostrar confirmacion
+  end
+end
+@enduml
+
+@startuml Secuencia - Registrar salida
+title Registro de salida de vehiculo
+autonumber
+
+actor "Operario o Administrador" as Usuario
+boundary "Interfaz de entradas y salidas" as UI
+control "API /transits/exit" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+Usuario -> UI: Selecciona contrato y confirma salida
+UI -> API: POST /api/transits/exit\n(cookie de sesion, contrato)
+API -> Auth: Validar sesion activa
+Auth -> DB: Consultar sesion y usuario
+DB --> Auth: Usuario autenticado y rol
+Auth --> API: Identidad y rol
+
+API -> DB: Iniciar transaccion
+opt El usuario es Operario
+  API -> DB: Verificar caja abierta a su nombre
+  DB --> API: Caja abierta
+end
+API -> DB: Consultar contrato y vehiculo con bloqueo
+DB --> API: Contrato y vehiculo
+API -> DB: Consultar ultimo transito del vehiculo con bloqueo
+DB --> API: Ultima direccion y celda asociada
+
+alt Vehiculo esta fuera
+  API -> DB: Revertir transaccion
+  API --> UI: Rechazar salida
+  UI --> Usuario: Informar que el vehiculo esta fuera
+else Vehiculo esta dentro
+  API -> DB: Cambiar celda asociada de Ocupado a Libre
+  API -> DB: Insertar transito de Salida
+  API -> DB: Confirmar transaccion
+  API --> UI: Salida registrada y celda liberada
+  UI --> Usuario: Mostrar confirmacion
+end
+@enduml
+
+@startuml Secuencia - Gestion de usuarios
+title Creacion y consulta de cuentas de usuario
+autonumber
+
+actor Administrador
+boundary "Interfaz de usuarios" as UI
+control "API /users" as API
+control "Autenticacion y autorizacion" as Auth
+database "MySQL" as DB
+
+alt Crear cuenta
+  Administrador -> UI: Ingresa documento, rol y contraseña inicial
+  UI -> API: POST /api/users\n(cookie de sesion, datos de cuenta)
+  API -> Auth: Validar sesion y rol Administrador
+  Auth -> DB: Consultar sesion y usuario
+  DB --> Auth: Usuario y rol
+  Auth --> API: Administrador autorizado
+  API -> API: Validar datos y generar hash de contraseña
+  API -> DB: Insertar cuenta
+  alt Documento unico disponible
+    DB --> API: Cuenta creada
+    API --> UI: Confirmar creacion
+    UI --> Administrador: Mostrar confirmacion
+  else Documento duplicado
+    DB --> API: Rechazar por restriccion de unicidad
+    API --> UI: Informar error
+    UI --> Administrador: Mostrar error sin confirmacion de exito
+  end
+else Consultar cuentas
+  Administrador -> UI: Abre la lista de usuarios
+  UI -> API: GET /api/users\n(cookie de sesion)
+  API -> Auth: Validar sesion y rol Administrador
+  Auth -> DB: Consultar sesion y usuario
+  DB --> Auth: Usuario y rol
+  Auth --> API: Administrador autorizado
+  API -> DB: Consultar documento, rol y fecha de creacion
+  DB --> API: Cuentas sin contraseñas ni hashes
+  API --> UI: Lista de cuentas
+  UI --> Administrador: Mostrar cuentas
+end
+@enduml
+
+@startuml Secuencia - Consulta y mantenimiento de celdas
+title Consulta y cambio de estado de celdas
+autonumber
+
+actor "Usuario autenticado" as Usuario
+actor Administrador
+boundary "Interfaz de celdas" as UI
+control "API /cells" as API
+control "Autenticacion y autorizacion" as Auth
+database "MySQL" as DB
+
+alt Consultar celdas
+  Usuario -> UI: Abre la vista de celdas
+  UI -> API: GET /api/cells\n(cookie de sesion)
+  API -> Auth: Validar sesion activa
+  Auth -> DB: Consultar sesion y usuario
+  DB --> Auth: Usuario autenticado
+  Auth --> API: Acceso autorizado
+  API -> DB: Consultar celdas, estados y placa cuando esta Ocupada
+  DB --> API: Lista de celdas
+  API --> UI: Estados y placas correspondientes
+  UI --> Usuario: Mostrar las celdas
+else Cambiar estado de mantenimiento
+  Administrador -> UI: Selecciona celda y estado destino
+  UI -> API: PATCH /api/cells/{id}/status\n(cookie de sesion, estado destino)
+  API -> Auth: Validar sesion y rol Administrador
+  Auth -> DB: Consultar sesion y usuario
+  DB --> Auth: Administrador autenticado
+  Auth --> API: Acceso autorizado
+  API -> DB: Iniciar transaccion y bloquear celda
+  DB --> API: Estado actual
+  alt Celda Ocupada
+    API -> DB: Rechazar cambio y revertir transaccion
+    API --> UI: Informar que no puede cambiarse manualmente
+    UI --> Administrador: Mostrar error
+  else Celda no Ocupada
+    API -> DB: Actualizar entre Libre y En mantenimiento
+    API -> DB: Confirmar transaccion
+    API --> UI: Estado actualizado
+    UI --> Administrador: Mostrar estado actualizado
+  end
+end
+@enduml

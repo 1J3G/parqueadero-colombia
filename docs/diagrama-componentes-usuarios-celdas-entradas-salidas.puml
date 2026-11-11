@@ -1,0 +1,112 @@
+@startuml Componentes - Entradas, salidas, usuarios y celdas
+title Parqueadero Colombia - Componentes de entradas/salidas, usuarios y celdas
+left to right direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+actor "Operario" as Operario
+actor "Administrador" as Administrador
+
+package "Frontend - Angular" {
+  component "LoginComponent" as LoginUI
+  component "ParkingComponent\nEntradas / salidas" as ParkingUI
+  component "CellsComponent" as CellsUI
+  component "UsersComponent" as UsersUI
+  component "AuthService\nAuthGuard / AdministratorGuard" as AuthClient
+}
+
+package "Backend - FastAPI" {
+  component "Aplicacion FastAPI\nmain.py" as API
+  component "auth.py\nAutenticacion y permisos" as Auth
+  component "routes.auth\n/api/auth" as AuthRoutes
+  component "routes.transits\n/api/transits" as TransitRoutes
+  component "routes.cells\n/api/cells" as CellRoutes
+  component "routes.users\n/api/users" as UserRoutes
+  component "routes.contracts\n/api/contracts" as ContractRoutes
+  component "cash.py\nValidacion de caja" as Cash
+  component "domain.py\nReglas de acceso y compatibilidad" as Domain
+  component "contracts.py\nActualizacion de vencimientos" as Contracts
+  component "novelties.py\nRegistro de novedades" as Novelties
+  component "database.py\nTransacciones MySQL" as Database
+}
+
+package "Persistencia - MySQL" {
+  database "users\nuser_sessions" as UserTables
+  database "cells" as CellTable
+  database "contracts\nvehicles" as ContractTables
+  database "transits" as TransitTable
+  database "cash_openings" as CashTable
+  database "novelties" as NoveltyTable
+}
+
+Operario --> LoginUI
+Operario --> ParkingUI
+Operario --> CellsUI
+Administrador --> LoginUI
+Administrador --> ParkingUI
+Administrador --> CellsUI
+Administrador --> UsersUI
+
+LoginUI --> AuthClient : inicia / cierra sesion
+ParkingUI --> AuthClient : requiere sesion
+CellsUI --> AuthClient : requiere sesion
+UsersUI --> AuthClient : requiere rol Administrador
+
+AuthClient --> AuthRoutes : HTTP /api/auth
+ParkingUI --> ContractRoutes : GET /api/contracts
+ParkingUI --> CellRoutes : GET /api/cells
+ParkingUI --> TransitRoutes : POST entrada / salida
+CellsUI --> CellRoutes : GET / PATCH estado
+UsersUI --> UserRoutes : GET / POST
+
+API ..> AuthRoutes : registra router
+API ..> TransitRoutes : registra router
+API ..> CellRoutes : registra router
+API ..> UserRoutes : registra router
+API ..> ContractRoutes : registra router
+
+AuthRoutes --> Auth : autentica / crea sesion
+TransitRoutes --> Auth : valida sesion
+CellRoutes --> Auth : valida sesion o Administrador
+UserRoutes --> Auth : exige Administrador
+ContractRoutes --> Auth : valida sesion
+
+TransitRoutes --> Cash : exige caja abierta al Operario
+TransitRoutes --> Domain : valida contrato, acceso y celda
+TransitRoutes --> Contracts : actualiza contratos vencidos
+TransitRoutes --> Novelties : guarda novedades de entrada
+TransitRoutes --> Database : transaccion de entrada/salida
+CellRoutes --> Domain : filtra celdas compatibles
+CellRoutes --> Database : consulta / actualiza celda
+UserRoutes --> Database : consulta / crea cuentas
+Auth --> Database : valida credenciales y sesion
+ContractRoutes --> Database : consulta contratos y vehiculos
+Cash --> Database : consulta caja abierta
+Contracts --> Database : actualiza vencimientos
+Novelties --> Database : inserta novedades
+
+Database --> UserTables
+Database --> CellTable
+Database --> ContractTables
+Database --> TransitTable
+Database --> CashTable
+Database --> NoveltyTable
+
+note bottom of TransitRoutes
+  Entrada: valida contrato, estado del vehiculo,
+  compatibilidad y disponibilidad; actualiza la celda
+  e inserta el transito dentro de una transaccion.
+  Salida: libera la celda asociada e inserta el transito.
+end note
+
+note bottom of UserRoutes
+  Solo Administradores pueden crear o consultar cuentas.
+  El hash de contraseña no se devuelve en las consultas.
+end note
+
+note bottom of CellRoutes
+  Los usuarios autenticados consultan las celdas.
+  Solo Administradores cambian entre Libre y
+  En mantenimiento; una celda Ocupada no se cambia.
+end note
+@enduml
