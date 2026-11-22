@@ -1,6 +1,8 @@
 node_modules/
 frontend/dist/
 frontend/.angular/
+frontend/test-results/
+frontend/playwright-report/
 __pycache__/
 *.py[cod]
 .venv/

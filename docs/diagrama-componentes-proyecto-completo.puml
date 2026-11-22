@@ -1,0 +1,151 @@
+@startuml Componentes - Proyecto completo
+title Parqueadero Colombia - Componentes de todo el proyecto
+left to right direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+actor "Operario" as Operario
+actor "Administrador" as Administrador
+
+package "Frontend - Angular" {
+  component "LoginComponent" as LoginUI
+  component "CashOpenComponent" as CashUI
+  component "ContractsComponent\nContractAuditComponent" as ContractsUI
+  component "ParkingComponent" as ParkingUI
+  component "CellsComponent" as CellsUI
+  component "PaymentsComponent" as PaymentsUI
+  component "UsersComponent" as UsersUI
+  component "AuthService\nAuthGuard / AdministratorGuard" as AuthClient
+  component "HTTP interceptor\nApiErrorService / ApiSuccessService" as HttpClient
+}
+
+package "Backend - FastAPI" {
+  component "main.py\nRegistro de routers" as API
+  component "routes.auth" as AuthRoutes
+  component "routes.cash" as CashRoutes
+  component "routes.customers" as CustomerRoutes
+  component "routes.contracts" as ContractRoutes
+  component "routes.transits" as TransitRoutes
+  component "routes.cells" as CellRoutes
+  component "routes.payments\nroutes.receipts" as PaymentRoutes
+  component "routes.users" as UserRoutes
+  component "auth.py\nSesiones y roles" as Auth
+  component "cash.py\nCaja vigente" as Cash
+  component "contracts.py\nEstado y vigencias" as Contracts
+  component "domain.py / vehicles.py\nValidaciones de dominio" as Domain
+  component "payments.py\nCalculo y registro de pagos" as Payments
+  component "receipts.py\nConsecutivos fiscales" as Receipts
+  component "novelties.py\nRegistro de novedades" as Novelties
+  component "database.py\nTransacciones" as Database
+}
+
+package "Persistencia - MySQL" {
+  database "users\nuser_sessions" as UserTables
+  database "customers" as CustomerTable
+  database "contracts\nvehicles" as ContractTables
+  database "cash_openings" as CashTable
+  database "payments\nreceipts\npayment_audit" as PaymentTables
+  database "cells" as CellTable
+  database "transits\nnovelties" as TransitTables
+}
+
+Operario --> LoginUI
+Operario --> CashUI
+Operario --> ContractsUI
+Operario --> ParkingUI
+Operario --> CellsUI
+Operario --> PaymentsUI
+Administrador --> LoginUI
+Administrador --> CashUI
+Administrador --> ContractsUI
+Administrador --> ParkingUI
+Administrador --> CellsUI
+Administrador --> PaymentsUI
+Administrador --> UsersUI
+
+LoginUI --> AuthClient : login / logout / restore
+CashUI --> AuthClient : sesion requerida
+ContractsUI --> AuthClient : sesion y rol
+ParkingUI --> AuthClient : sesion requerida
+CellsUI --> AuthClient : sesion y rol
+PaymentsUI --> AuthClient : sesion y rol
+UsersUI --> AuthClient : rol Administrador
+AuthClient --> HttpClient : solicitudes con sesion
+
+HttpClient --> AuthRoutes : HTTP /api/auth
+CashUI --> CashRoutes : HTTP /api/cash
+ContractsUI --> CustomerRoutes : HTTP /api/customers
+ContractsUI --> ContractRoutes : HTTP /api/contracts
+ParkingUI --> ContractRoutes : consultas de contratos
+ParkingUI --> TransitRoutes : entradas / salidas
+ParkingUI --> CellRoutes : consulta de celdas
+CellsUI --> CellRoutes : consulta / mantenimiento
+PaymentsUI --> CashRoutes : consulta de caja
+PaymentsUI --> PaymentRoutes : registrar / anular pago
+UsersUI --> UserRoutes : consultar / crear cuentas
+
+API ..> AuthRoutes : registra router
+API ..> CashRoutes : registra router
+API ..> CustomerRoutes : registra router
+API ..> ContractRoutes : registra router
+API ..> TransitRoutes : registra router
+API ..> CellRoutes : registra router
+API ..> PaymentRoutes : registra router
+API ..> UserRoutes : registra router
+
+AuthRoutes --> Auth : autentica / crea sesion
+CashRoutes --> Auth : valida sesion
+CustomerRoutes --> Auth : valida sesion
+ContractRoutes --> Auth : valida sesion / Administrador
+TransitRoutes --> Auth : valida sesion
+CellRoutes --> Auth : valida sesion / Administrador
+PaymentRoutes --> Auth : valida sesion / rol
+UserRoutes --> Auth : exige Administrador
+
+CashRoutes --> Cash : abre / consulta / cierra caja
+TransitRoutes --> Cash : exige caja al Operario
+PaymentRoutes --> Cash : exige caja abierta
+ContractRoutes --> Contracts : cancela / vence contratos
+Payments --> Contracts : marca vencimientos
+TransitRoutes --> Contracts : actualiza vencimientos
+ContractRoutes --> Domain : valida placa
+TransitRoutes --> Domain : valida acceso y compatibilidad
+CellRoutes --> Domain : valida compatibilidad de celda
+TransitRoutes --> Novelties : registra novedades
+PaymentRoutes --> Payments : registra / anula pagos
+Payments --> Domain : calcula fechas e impuestos
+Payments --> Receipts : solicita consecutivo fiscal
+
+Auth --> Database
+Cash --> Database
+Contracts --> Database
+Payments --> Database
+Receipts --> Database
+Novelties --> Database
+AuthRoutes --> Database
+CashRoutes --> Database
+CustomerRoutes --> Database
+ContractRoutes --> Database
+TransitRoutes --> Database
+CellRoutes --> Database
+PaymentRoutes --> Database
+UserRoutes --> Database
+
+Database --> UserTables
+Database --> CustomerTable
+Database --> ContractTables
+Database --> CashTable
+Database --> PaymentTables
+Database --> CellTable
+Database --> TransitTables
+
+note bottom of API
+  Aplicacion monolitica. Todos los routers
+  comparten servicios de dominio y MySQL.
+end note
+
+note bottom of Database
+  Las operaciones relacionadas usan transacciones
+  con commit o rollback.
+end note
+@enduml

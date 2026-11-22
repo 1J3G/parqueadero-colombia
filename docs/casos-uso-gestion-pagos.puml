@@ -1,0 +1,76 @@
+@startuml Casos de uso - Gestion de pagos
+title Gestion de pagos - Casos de uso
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuario autenticado" as Usuario
+actor "Operario" as Operario
+actor "Administrador" as Administrador
+Usuario <|-- Operario
+Usuario <|-- Administrador
+
+rectangle "Modulo de gestion de pagos" {
+  usecase "Abrir caja" as UCAbrirCaja
+  usecase "Validar sesion activa" as UCValidarSesion
+  usecase "Registrar pago de mensualidad" as UCRegistrarPago
+  usecase "Verificar caja abierta\na nombre del operario" as UCValidarCaja
+  usecase "Capturar referencia\nbancaria" as UCCapturarReferencia
+  usecase "Activar contrato y\ncalcular vigencia" as UCActualizarVigencia
+  usecase "Generar comprobante fiscal" as UCGenerarComprobante
+  usecase "Anular pago" as UCAnularPago
+  usecase "Confirmar credenciales\ndel Administrador" as UCConfirmarCredenciales
+  usecase "Registrar anulacion\nen auditoria" as UCAuditarAnulacion
+  usecase "Cerrar caja" as UCCerrarCaja
+}
+
+Operario --> UCAbrirCaja
+Operario --> UCRegistrarPago
+Operario --> UCCerrarCaja
+Administrador --> UCAnularPago
+Administrador --> UCCerrarCaja
+
+UCAbrirCaja ..> UCValidarSesion : <<include>>
+UCRegistrarPago ..> UCValidarSesion : <<include>>
+UCRegistrarPago ..> UCValidarCaja : <<include>>
+UCRegistrarPago ..> UCActualizarVigencia : <<include>>
+UCRegistrarPago ..> UCGenerarComprobante : <<include>>
+UCCapturarReferencia ..> UCRegistrarPago : <<extend>>\n[metodo = Transferencia Bancaria]
+UCAnularPago ..> UCValidarSesion : <<include>>
+UCAnularPago ..> UCConfirmarCredenciales : <<include>>
+UCAnularPago ..> UCAuditarAnulacion : <<include>>
+UCCerrarCaja ..> UCValidarSesion : <<include>>
+
+note right of UCRegistrarPago
+  Metodos: Efectivo, Transferencia Bancaria
+  o Tarjeta de Credito/Debito.
+  La transferencia requiere referencia.
+  El contrato Cancelado no se reactiva.
+  La vigencia usa los contratos Activos no vencidos
+  del mismo cliente y vehiculo como base.
+end note
+
+note right of UCGenerarComprobante
+  Numeracion consecutiva unica.
+  Incluye valor neto, IVA del 19%
+  e identificacion del cliente.
+end note
+
+note right of UCAnularPago
+  Solo Administrador.
+  El Operario no puede anular ni eliminar pagos.
+  La justificacion es obligatoria e inmutable
+  desde la aplicacion.
+end note
+
+note bottom of UCCerrarCaja
+  El Operario solo puede cerrar su propia caja.
+  El Administrador puede cerrar cualquier caja abierta.
+  Se registra fecha y hora del servidor;
+  no se solicita monto final.
+end note
+
+note bottom of UCAbrirCaja
+  El operario abre caja con una base de efectivo.
+  La caja debe estar abierta para cobrar mensualidades.
+end note
+@enduml

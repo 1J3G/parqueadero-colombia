@@ -1,0 +1,421 @@
+@startuml Secuencia - Inicio de sesion
+title Sistema de parqueadero - Inicio de sesion
+autonumber
+
+actor "Operario o Administrador" as Usuario
+boundary "Interfaz web" as UI
+control "API de autenticacion" as API
+database "MySQL" as DB
+
+Usuario -> UI: Ingresa documento y contraseña
+UI -> API: POST /api/auth/login
+API -> DB: Buscar usuario por documento
+DB --> API: Usuario y hash de contraseña
+alt Credenciales validas
+  API -> API: Verificar contraseña contra hash
+  API -> DB: Crear sesion y guardar hash del token
+  DB --> API: Sesion creada
+  API --> UI: Respuesta de autenticacion y cookie de sesion
+  UI --> Usuario: Mostrar acceso autenticado
+else Credenciales invalidas
+  API --> UI: Rechazar autenticacion
+  UI --> Usuario: Mostrar error de acceso
+end
+@enduml
+
+@startuml Secuencia - Gestion de clientes y contratos
+title Sistema de parqueadero - Clientes y contratos
+autonumber
+
+actor "Usuario autenticado" as Usuario
+actor Administrador
+boundary "Interfaz de clientes y contratos" as UI
+control "API de clientes y contratos" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+alt Crear cliente
+  Usuario -> UI: Ingresa tipo de documento, documento y nombre
+  UI -> API: POST /api/customers
+  API -> Auth: Validar sesion activa
+  Auth --> API: Usuario autenticado
+  API -> DB: Insertar cliente con documento unico
+  alt Documento disponible
+    DB --> API: Cliente creado
+    API --> UI: Confirmar creacion
+    UI --> Usuario: Mostrar confirmacion
+  else Documento duplicado
+    DB --> API: Rechazar por unicidad
+    API --> UI: Informar error
+    UI --> Usuario: Mostrar error sin exito
+  end
+else Crear contrato
+  Usuario -> UI: Selecciona cliente e ingresa placa y tipo
+  UI -> API: POST /api/contracts
+  API -> Auth: Validar sesion activa
+  Auth --> API: Usuario autenticado
+  API -> API: Validar formato de placa y tipo de vehiculo
+  alt Placa invalida
+    API --> UI: Rechazar solicitud
+    UI --> Usuario: Mostrar error sin exito
+  else Placa valida
+    API -> DB: Verificar cliente y buscar vehiculo por placa
+    alt Cliente inexistente o tipo de vehiculo incompatible
+      DB --> API: Cliente no encontrado o vehiculo incompatible
+      API --> UI: Rechazar solicitud
+      UI --> Usuario: Mostrar error sin exito
+    else Cliente y vehiculo compatibles
+      opt La placa aun no existe
+        API -> DB: Crear vehiculo
+        DB --> API: Vehiculo creado
+      end
+      API -> DB: Crear contrato Pendiente de Pago
+      DB --> API: Contrato creado sin fechas de vigencia
+      API --> UI: Confirmar creacion del contrato
+      UI --> Usuario: Mostrar confirmacion
+    end
+  end
+end
+@enduml
+
+@startuml Secuencia - Cambio de placa de contrato
+title Sistema de parqueadero - Cambio autorizado de placa
+autonumber
+
+actor Administrador
+boundary "Interfaz de contratos" as UI
+control "API de contratos" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+Administrador -> UI: Solicita cambiar la placa del contrato
+UI -> API: PATCH /api/contracts/{id}/plate
+API -> Auth: Validar sesion y rol Administrador
+Auth -> DB: Consultar sesion y usuario
+DB --> Auth: Administrador autenticado
+Auth --> API: Autorizacion concedida
+API -> DB: Consultar contrato, vehiculo y ultimo transito
+DB --> API: Datos contractuales y estado del vehiculo
+API -> API: Validar formato de placa y tipo de vehiculo
+alt Vehiculo actual o nueva placa estan dentro
+  API --> UI: Rechazar cambio de placa
+  UI --> Administrador: Mostrar error sin cambiar el contrato
+else Placa valida y vehiculos fuera
+  API -> DB: Asociar contrato al vehiculo de la placa
+  DB --> API: Cambio confirmado
+  API --> UI: Confirmar actualizacion
+  UI --> Administrador: Mostrar placa actualizada
+end
+@enduml
+
+@startuml Secuencia - Cancelacion y auditoria de contrato
+title Sistema de parqueadero - Cancelacion y consulta de auditoria
+autonumber
+
+actor Administrador
+actor Operario
+boundary "Interfaz de contratos" as UI
+control "API de contratos" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+alt Cancelar contrato
+  Administrador -> UI: Ingresa justificacion y confirma cancelacion
+  UI -> API: POST /api/contracts/{id}/cancel
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Administrador autorizado
+  API -> DB: Bloquear contrato y validar estado
+  DB --> API: Contrato disponible para cancelar
+  API -> DB: Guardar estado, Administrador, fecha y justificacion
+  DB --> API: Cancelacion registrada
+  API --> UI: Confirmar cancelacion
+  UI --> Administrador: Mostrar confirmacion
+else Consultar auditoria como Administrador
+  Administrador -> UI: Abre auditoria de cancelaciones
+  UI -> API: GET /api/contracts/cancellations
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Administrador autorizado
+  API -> DB: Consultar cancelaciones ordenadas por fecha
+  DB --> API: Contrato, cliente, placa, autor, fecha y justificacion
+  API --> UI: Entregar auditoria
+  UI --> Administrador: Mostrar cancelaciones
+else Consultar auditoria como Operario
+  Operario -> UI: Intenta abrir auditoria de cancelaciones
+  UI -> API: GET /api/contracts/cancellations
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Rol insuficiente
+  API --> UI: Denegar acceso
+  UI --> Operario: Mostrar error de autorizacion
+end
+@enduml
+
+@startuml Secuencia - Caja y pagos
+title Sistema de parqueadero - Caja, pagos y comprobantes
+autonumber
+
+actor Operario
+actor Administrador
+boundary "Interfaz de caja y pagos" as UI
+control "API de caja y pagos" as API
+control "Autenticacion y permisos" as Auth
+control "Reglas de pago y vigencia" as Pagos
+database "MySQL" as DB
+
+Operario -> UI: Ingresa base de efectivo y abre caja
+UI -> API: POST /api/cash/open
+API -> Auth: Validar sesion activa
+Auth -> DB: Verificar usuario y sesion
+DB --> Auth: Operario autenticado
+Auth --> API: Sesion valida
+API -> DB: Bloquear usuario y buscar caja abierta
+alt Ya existe una caja abierta
+  DB --> API: Caja abierta encontrada
+  API --> UI: Rechazar apertura duplicada
+  UI --> Operario: Mostrar aviso de caja abierta
+else No existe caja abierta
+  API -> DB: Registrar caja con base de efectivo
+  DB --> API: Caja creada
+  API --> UI: Confirmar apertura
+  UI --> Operario: Mostrar caja disponible
+end
+
+Operario -> UI: Selecciona contrato, meses, valor y metodo
+UI -> API: POST /api/payments
+API -> Auth: Validar sesion y rol Operario
+Auth --> API: Operario autorizado
+API -> DB: Iniciar transaccion y bloquear caja abierta
+DB --> API: Caja vigente a nombre del Operario
+API -> Pagos: Validar contrato, monto, meses y referencia
+Pagos -> DB: Bloquear contrato y vehiculo
+DB --> Pagos: Contrato, cliente y vehiculo
+alt Caja ausente, contrato Cancelado o datos invalidos
+  Pagos --> API: Rechazar pago sin persistir cambios
+  API -> DB: Revertir transaccion
+  API --> UI: Informar error
+  UI --> Operario: Mostrar error sin confirmacion de exito
+else Datos validos
+  Pagos -> DB: Consultar vencimiento Activo mas lejano del cliente y vehiculo
+  DB --> Pagos: Fecha base para la vigencia
+  Pagos -> Pagos: Calcular inicio, vencimiento, IVA y total
+  Pagos -> DB: Guardar pago y activar contrato con su vigencia
+  Pagos -> DB: Bloquear e incrementar consecutivo del comprobante
+  Pagos -> DB: Guardar comprobante fiscal
+  DB --> Pagos: Pago y comprobante persistidos
+  Pagos --> API: Resultado del pago y periodo
+  API -> DB: Confirmar transaccion
+  API --> UI: Confirmar pago y devolver comprobante
+  UI --> Operario: Mostrar comprobante y vigencia
+end
+
+opt Anulacion de pago
+  Administrador -> UI: Ingresa pago, contraseña y justificacion
+  UI -> API: POST /api/payments/{id}/void
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Administrador autenticado
+  API -> DB: Verificar contraseña, bloquear pago y consultar estado
+  alt Credenciales invalidas o pago ya anulado
+    DB --> API: Rechazar anulacion
+    API --> UI: Informar error sin alterar el pago
+  else Pago registrado y credenciales validas
+    API -> DB: Marcar pago Anulado y guardar auditoria
+    DB --> API: Anulacion y justificacion persistidas
+    API --> UI: Confirmar anulacion
+    UI --> Administrador: Mostrar confirmacion
+  end
+end
+
+opt Cierre de caja
+  alt Cierre por el titular
+    Operario -> UI: Solicita cerrar caja propia
+  else Cierre por un Administrador
+    Administrador -> UI: Solicita cerrar una caja abierta
+  end
+  UI -> API: POST /api/cash/{id}/close
+  API -> Auth: Validar sesion y titular o rol Administrador
+  Auth --> API: Cierre autorizado
+  API -> DB: Guardar fecha y hora del servidor
+  DB --> API: Caja cerrada sin monto final
+  API --> UI: Confirmar cierre
+  alt Cierre por titular
+    UI --> Operario: Mostrar caja cerrada
+  else Cierre por Administrador
+    UI --> Administrador: Mostrar caja cerrada
+  end
+end
+@enduml
+
+@startuml Secuencia - Entrada de vehiculo
+title Sistema de parqueadero - Registro de entrada
+autonumber
+
+actor "Operario o Administrador" as Usuario
+actor Administrador
+boundary "Interfaz de entradas y salidas" as UI
+control "API de transitos" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+Usuario -> UI: Selecciona contrato y celda
+UI -> API: POST /api/transits/entry
+API -> Auth: Validar sesion activa
+Auth -> DB: Consultar sesion y usuario
+DB --> Auth: Usuario autenticado y rol
+Auth --> API: Identidad y rol
+API -> DB: Iniciar transaccion
+opt El usuario es Operario
+  API -> DB: Verificar caja abierta a su nombre
+  DB --> API: Caja abierta
+end
+API -> DB: Actualizar contratos vencidos y consultar contrato
+DB --> API: Estado y periodo contractual
+alt Contrato Activo y dentro de vigencia
+  API -> API: Autorizar entrada automatica
+else Contrato Vencido, Pendiente de Pago o Cancelado
+  Administrador -> UI: Autoriza acceso excepcional e indica novedad
+  UI -> API: Envia credenciales y motivo de excepcion
+  API -> DB: Verificar rol y credenciales de Administrador
+  alt Administrador autorizado y novedad informada
+    API -> API: Autorizar acceso excepcional
+  else Autorizacion invalida o novedad ausente
+    break Entrada no autorizada
+      API -> DB: Revertir transaccion
+      API --> UI: Rechazar entrada
+      UI --> Usuario: Mostrar motivo del rechazo
+    end
+  end
+end
+API -> DB: Consultar ultimo transito del vehiculo
+DB --> API: Ultima direccion y celda
+alt Vehiculo ya esta dentro
+  break Entrada duplicada
+    API -> DB: Revertir transaccion
+    API --> UI: Rechazar entrada duplicada
+    UI --> Usuario: Informar que el vehiculo ya esta dentro
+  end
+else Vehiculo esta fuera
+  API -> DB: Consultar celda y bloquear fila
+  DB --> API: Categoria y estado de celda
+  alt Celda compatible y Libre
+    API -> DB: Cambiar celda de Libre a Ocupado
+    API -> DB: Insertar transito de Entrada
+    opt Se registran daños o acceso excepcional
+      API -> DB: Insertar novedad asociada al transito
+    end
+    API -> DB: Confirmar transaccion
+    API --> UI: Confirmar entrada
+    UI --> Usuario: Mostrar registro creado
+  else Celda incompatible o no disponible
+    API -> DB: Revertir transaccion
+    API --> UI: Rechazar asignacion
+    UI --> Usuario: Mostrar error de celda
+  end
+end
+@enduml
+
+@startuml Secuencia - Salida de vehiculo
+title Sistema de parqueadero - Registro de salida
+autonumber
+
+actor "Operario o Administrador" as Usuario
+boundary "Interfaz de entradas y salidas" as UI
+control "API de transitos" as API
+control "Autenticacion y permisos" as Auth
+database "MySQL" as DB
+
+Usuario -> UI: Selecciona contrato y confirma salida
+UI -> API: POST /api/transits/exit
+API -> Auth: Validar sesion activa
+Auth --> API: Usuario autenticado y rol
+API -> DB: Iniciar transaccion y consultar caja si es Operario
+DB --> API: Caja vigente o usuario Administrador
+API -> DB: Consultar ultimo transito del vehiculo con bloqueo
+DB --> API: Direccion y celda asociada
+alt Vehiculo Dentro del Parqueadero
+  API -> DB: Cambiar celda de Ocupado a Libre
+  API -> DB: Insertar transito de Salida
+  API -> DB: Confirmar transaccion
+  API --> UI: Confirmar salida y liberacion de celda
+  UI --> Usuario: Mostrar salida registrada
+else Vehiculo Fuera del Parqueadero
+  API -> DB: Revertir transaccion
+  API --> UI: Rechazar salida
+  UI --> Usuario: Informar que el vehiculo esta fuera
+end
+@enduml
+
+@startuml Secuencia - Usuarios
+title Sistema de parqueadero - Administracion de usuarios
+autonumber
+
+actor Administrador
+boundary "Interfaz de usuarios" as UI
+control "API de usuarios" as API
+control "Autenticacion y autorizacion" as Auth
+database "MySQL" as DB
+
+alt Crear cuenta
+  Administrador -> UI: Ingresa documento, rol y contraseña inicial
+  UI -> API: POST /api/users
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Administrador autorizado
+  API -> API: Validar datos y generar hash
+  API -> DB: Insertar cuenta
+  alt Documento unico disponible
+    DB --> API: Cuenta creada
+    API --> UI: Confirmar creacion
+    UI --> Administrador: Mostrar confirmacion
+  else Documento duplicado
+    DB --> API: Rechazar por unicidad
+    API --> UI: Informar error
+    UI --> Administrador: Mostrar error sin exito
+  end
+else Consultar cuentas
+  Administrador -> UI: Abre la lista de usuarios
+  UI -> API: GET /api/users
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Administrador autorizado
+  API -> DB: Consultar cuentas sin contraseñas ni hashes
+  DB --> API: Documentos, roles y fechas de creacion
+  API --> UI: Entregar lista de cuentas
+  UI --> Administrador: Mostrar cuentas
+end
+@enduml
+
+@startuml Secuencia - Celdas
+title Sistema de parqueadero - Consulta y mantenimiento de celdas
+autonumber
+
+actor "Usuario autenticado" as Usuario
+actor Administrador
+boundary "Interfaz de celdas" as UI
+control "API de celdas" as API
+control "Autenticacion y autorizacion" as Auth
+database "MySQL" as DB
+
+alt Consultar celdas
+  Usuario -> UI: Abre la vista de celdas
+  UI -> API: GET /api/cells
+  API -> Auth: Validar sesion activa
+  Auth --> API: Usuario autenticado
+  API -> DB: Consultar estados y placas de celdas Ocupadas
+  DB --> API: Celdas Libres, Ocupadas y En mantenimiento
+  API --> UI: Entregar estados de celdas
+  UI --> Usuario: Mostrar celdas y placas correspondientes
+else Cambiar estado de mantenimiento
+  Administrador -> UI: Selecciona celda y estado destino
+  UI -> API: PATCH /api/cells/{id}/status
+  API -> Auth: Validar sesion y rol Administrador
+  Auth --> API: Administrador autorizado
+  API -> DB: Bloquear celda y consultar estado
+  alt Celda Ocupada o transicion invalida
+    DB --> API: Estado no modificable
+    API --> UI: Rechazar cambio
+    UI --> Administrador: Mostrar error
+  else Transicion entre Libre y En mantenimiento
+    API -> DB: Actualizar estado de celda
+    DB --> API: Cambio guardado
+    API --> UI: Confirmar actualizacion
+    UI --> Administrador: Mostrar estado actualizado
+  end
+end
+@enduml
